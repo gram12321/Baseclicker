@@ -1,0 +1,31 @@
+// resourcesRegistry.ts
+// Example resource definitions and registry
+import { Resource, ResourceType, Recipe } from './resource';
+
+// Example recipes
+const woodRecipe: Recipe = {
+  inputs: [], // Wood is a base resource, no input required
+  outputResource: ResourceType.Wood,
+  outputAmount: 1,
+};
+
+const stoneRecipe: Recipe = {
+  inputs: [], // Stone is a base resource, no input required
+  outputResource: ResourceType.Stone,
+  outputAmount: 1,
+};
+
+const ironRecipe: Recipe = {
+  inputs: [
+    { resource: ResourceType.Stone, amount: 2 },
+  ],
+  outputResource: ResourceType.Iron,
+  outputAmount: 1,
+};
+
+// Resource instances
+export const resources = {
+  [ResourceType.Wood]: new Resource(ResourceType.Wood, 'Wood', 1, woodRecipe),
+  [ResourceType.Stone]: new Resource(ResourceType.Stone, 'Stone', 2, stoneRecipe),
+  [ResourceType.Iron]: new Resource(ResourceType.Iron, 'Iron', 5, ironRecipe),
+};
