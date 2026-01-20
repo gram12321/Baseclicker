@@ -18,6 +18,9 @@ export interface Recipe {
   inputs: RecipeInput[];
   outputResource: ResourceType;
   outputAmount: number;
+  workamount: number;
+  active: boolean;
+  workamountCompleted?: number;
 }
 
 export class Resource {
@@ -30,6 +33,10 @@ export class Resource {
     this.type = type;
     this.name = name;
     this.basePrice = basePrice;
+    // Ensure runtime progress field exists on the recipe for persistence
+    if (recipe.workamountCompleted === undefined) {
+      recipe.workamountCompleted = 0;
+    }
     this.recipe = recipe;
   }
 

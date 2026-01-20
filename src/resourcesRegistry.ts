@@ -7,12 +7,18 @@ const woodRecipe: Recipe = {
   inputs: [], // Wood is a base resource, no input required
   outputResource: ResourceType.Wood,
   outputAmount: 1,
+  workamount: 1,
+  active: false,
+  workamountCompleted: 0,
 };
 
 const stoneRecipe: Recipe = {
   inputs: [], // Stone is a base resource, no input required
   outputResource: ResourceType.Stone,
   outputAmount: 1,
+  workamount: 1,
+  active: false,
+  workamountCompleted: 0,
 };
 
 const ironRecipe: Recipe = {
@@ -21,6 +27,9 @@ const ironRecipe: Recipe = {
   ],
   outputResource: ResourceType.Iron,
   outputAmount: 1,
+  workamount: 2,
+  active: false,
+  workamountCompleted: 0,
 };
 
 // Resource instances
