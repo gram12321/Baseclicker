@@ -1,7 +1,3 @@
-// Resource.ts
-// Basic resource class and recipe interface for clicker game mechanics
-
-
 export enum ResourceType {
   Wood = 'Wood',
   Stone = 'Stone',
