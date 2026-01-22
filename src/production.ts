@@ -1,6 +1,8 @@
 import { ResourceType } from './resource';
 import { resources } from './resourcesRegistry';
 import { Inventory } from './inventory';
+import { getBalance } from './gameState';
+import { transaction } from './economy';
 
 /**
  * Manage production state for a resource.
@@ -23,9 +25,11 @@ export function manageProduction(
   switch (action) {
     case 'set':
       if (typeof value !== 'boolean') return false;
+      if (value && !r.productionBuilt) return false;
       r.recipe.active = value;
       return true;
     case 'activate':
+      if (!r.productionBuilt) return false;
       r.recipe.active = true;
       return true;
     case 'deactivate':
@@ -46,18 +50,20 @@ export function manageProduction(
 // pure and avoids implicit dependencies / initialization order issues.
 
 /**
- * Advance production for all active recipes by `baseProduction * modifiersProduct`.
+ * Advance production for all active recipes by
+ * `baseProduction * globalMultiplier * resource.productionMultiplier`.
  * If no inventory has been set via `setProductionInventory`, this is a no-op.
  */
 export function advanceProduction(inventory: Inventory | null, baseProduction = 1, modifiers: number[] = []): void {
   if (!inventory) return;
 
-  const multiplier = modifiers.length ? modifiers.reduce((a, b) => a * b, 1) : 1;
-  const amountToAdd = baseProduction * multiplier;
+  const globalMultiplier = modifiers.length ? modifiers.reduce((a, b) => a * b, 1) : 1;
 
   for (const r of Object.values(resources)) {
     const recipe = r.recipe;
     if (!recipe || !recipe.active) continue;
+
+    const amountToAdd = baseProduction * globalMultiplier * r.productionMultiplier;
 
     // Add work to the recipe's persisted progress field
     if (recipe.workamount > 0) {
@@ -104,5 +110,61 @@ export function advanceProduction(inventory: Inventory | null, baseProduction = 
       }
     }
   }
+}
+
+const UPGRADE_COST_GROWTH = 1.5;
+const UPGRADE_BASE_MULTIPLIER_INCREASE = 0.2;
+const UPGRADE_DIMINISHING_FACTOR = 0.9;
+
+export function buildProduction(resource: ResourceType): boolean {
+  const r = resources[resource];
+  if (!r || r.productionBuilt) return false;
+  const cost = Math.max(0, r.productionStartCost);
+  if (getBalance() < cost) return false;
+  r.productionBuilt = true;
+  transaction(-cost, `Built ${r.name} production`);
+  return true;
+}
+
+export function getProductionUpgradeCost(resource: ResourceType): number {
+  const r = resources[resource];
+  if (!r) return 0;
+  const costGrowth = Math.max(1, UPGRADE_COST_GROWTH);
+  const baseCost = Math.max(0, r.productionStartCost);
+  const level = Math.max(0, r.productionUpgradeLevel);
+  return Math.ceil(baseCost * Math.pow(costGrowth, level));
+}
+
+export function upgradeProduction(
+  resource: ResourceType
+): { success: boolean; cost: number; newMultiplier: number; upgradeLevel: number } {
+  const r = resources[resource];
+  if (!r) {
+    return { success: false, cost: 0, newMultiplier: 0, upgradeLevel: 0 };
+  }
+  if (!r.productionBuilt) {
+    return { success: false, cost: 0, newMultiplier: r.productionMultiplier, upgradeLevel: r.productionUpgradeLevel };
+  }
+
+  const cost = getProductionUpgradeCost(resource);
+  if (getBalance() < cost) {
+    return { success: false, cost, newMultiplier: r.productionMultiplier, upgradeLevel: r.productionUpgradeLevel };
+  }
+
+  const diminishing = Math.max(0, UPGRADE_DIMINISHING_FACTOR);
+  const baseIncrease = Math.max(0, UPGRADE_BASE_MULTIPLIER_INCREASE);
+  const level = Math.max(0, r.productionUpgradeLevel);
+  const increase = baseIncrease * Math.pow(diminishing, level);
+  r.productionMultiplier += increase;
+  r.productionUpgradeLevel += 1;
+
+  transaction(-cost, `Upgraded ${r.name} production (x${r.productionUpgradeLevel})`);
+
+  return {
+    success: true,
+    cost,
+    newMultiplier: r.productionMultiplier,
+    upgradeLevel: r.productionUpgradeLevel,
+  };
 }
 

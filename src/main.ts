@@ -2,7 +2,7 @@
 import { Inventory } from './inventory';
 import { ResourceType } from './resource';
 import { resources } from './resourcesRegistry';
-import { manageProduction } from './production';
+import { manageProduction, upgradeProduction, getProductionUpgradeCost, buildProduction as buildProductionAction } from './production';
 import { tick, getGameday } from './game/gametick';
 import { getBalance, setAutoSellEnabled, isAutoSellEnabled, setAutoSellAmount, getAutoSellAmount } from './gameState';
 import { getMarketSupply, getTransactionLog, sellResource as sellResourceEconomy } from './economy';
@@ -44,7 +44,10 @@ function updateProductionStatus() {
     const type = el.dataset.resourceType as ResourceType | undefined;
     if (!type) return;
     const isActive = manageProduction(type, 'isActive');
-    if (isActive) {
+    if (!resources[type].productionBuilt) {
+      el.textContent = 'Not built';
+      el.className = 'production-status status-locked';
+    } else if (isActive) {
       el.textContent = 'Active';
       el.className = 'production-status status-active';
     } else {
@@ -61,6 +64,53 @@ function updateProductionStatus() {
     if (!resource || resource.recipe.workamount <= 0) return;
     const progress = ((resource.recipe.workamountCompleted ?? 0) / resource.recipe.workamount) * 100;
     el.style.width = `${Math.min(progress, 100)}%`;
+  });
+
+  updateProductionControls();
+}
+
+function updateProductionControls() {
+  const items = document.querySelectorAll<HTMLElement>('[data-production-item="true"]');
+  items.forEach((item) => {
+    const type = item.dataset.resourceType as ResourceType | undefined;
+    if (!type) return;
+    const resource = resources[type];
+    const isBuilt = resource.productionBuilt;
+    item.classList.toggle('resource-item-disabled', !isBuilt);
+
+    const buildBtn = item.querySelector<HTMLButtonElement>('[data-build-button="true"]');
+    const upgradeBtn = item.querySelector<HTMLButtonElement>('[data-upgrade-button="true"]');
+    const activateBtn = item.querySelector<HTMLButtonElement>('[data-activate-button="true"]');
+    const deactivateBtn = item.querySelector<HTMLButtonElement>('[data-deactivate-button="true"]');
+    const buildCostEl = item.querySelector<HTMLElement>('[data-build-cost="true"]');
+    const upgradeCostEl = item.querySelector<HTMLElement>('[data-upgrade-cost="true"]');
+    const levelEl = item.querySelector<HTMLElement>('[data-production-level="true"]');
+    const multiplierEl = item.querySelector<HTMLElement>('[data-production-multiplier="true"]');
+
+    if (buildBtn) {
+      buildBtn.disabled = isBuilt;
+    }
+    if (upgradeBtn) {
+      upgradeBtn.disabled = !isBuilt;
+    }
+    if (activateBtn) {
+      activateBtn.disabled = !isBuilt;
+    }
+    if (deactivateBtn) {
+      deactivateBtn.disabled = !isBuilt;
+    }
+    if (buildCostEl) {
+      buildCostEl.textContent = formatCurrency(resource.productionStartCost, { maxDecimals: 2, minDecimals: 0 });
+    }
+    if (upgradeCostEl) {
+      upgradeCostEl.textContent = formatCurrency(getProductionUpgradeCost(type), { maxDecimals: 2, minDecimals: 0 });
+    }
+    if (levelEl) {
+      levelEl.textContent = resource.productionUpgradeLevel.toString();
+    }
+    if (multiplierEl) {
+      multiplierEl.textContent = resource.productionMultiplier.toFixed(2);
+    }
   });
 }
 
@@ -159,7 +209,7 @@ function buildInventory() {
   updateInventory();
 }
 
-function buildProduction() {
+function buildProductionUI() {
   const container = document.getElementById('production');
   if (!container) return;
   container.innerHTML = '';
@@ -167,6 +217,8 @@ function buildProduction() {
     const resourceType = type as ResourceType;
     const item = document.createElement('div');
     item.className = 'resource-item';
+    item.dataset.productionItem = 'true';
+    item.dataset.resourceType = resourceType;
 
     const header = document.createElement('div');
     const name = document.createElement('span');
@@ -184,6 +236,7 @@ function buildProduction() {
     const activateBtn = document.createElement('button');
     activateBtn.className = 'button button-success';
     activateBtn.textContent = 'Activate';
+    activateBtn.dataset.activateButton = 'true';
     activateBtn.addEventListener('click', () => {
       manageProduction(resourceType, 'activate');
       updateProductionStatus();
@@ -191,12 +244,30 @@ function buildProduction() {
     const deactivateBtn = document.createElement('button');
     deactivateBtn.className = 'button button-danger';
     deactivateBtn.textContent = 'Deactivate';
+    deactivateBtn.dataset.deactivateButton = 'true';
     deactivateBtn.addEventListener('click', () => {
       manageProduction(resourceType, 'deactivate');
       updateProductionStatus();
     });
     buttons.appendChild(activateBtn);
     buttons.appendChild(deactivateBtn);
+
+    const buildBtn = document.createElement('button');
+    buildBtn.className = 'button';
+    buildBtn.textContent = 'Build';
+    buildBtn.dataset.buildButton = 'true';
+    buildBtn.addEventListener('click', () => {
+      (window as any).buildProduction(resourceType);
+    });
+    const upgradeBtn = document.createElement('button');
+    upgradeBtn.className = 'button';
+    upgradeBtn.textContent = 'Upgrade';
+    upgradeBtn.dataset.upgradeButton = 'true';
+    upgradeBtn.addEventListener('click', () => {
+      (window as any).upgradeProduction(resourceType);
+    });
+    buttons.appendChild(buildBtn);
+    buttons.appendChild(upgradeBtn);
 
     const info = document.createElement('div');
     info.className = 'info-text';
@@ -212,6 +283,16 @@ function buildProduction() {
     item.appendChild(header);
     item.appendChild(buttons);
     item.appendChild(info);
+
+    const costInfo = document.createElement('div');
+    costInfo.className = 'info-text';
+    costInfo.innerHTML = `
+      Build cost: <span data-build-cost="true"></span> |
+      Upgrade cost: <span data-upgrade-cost="true"></span> |
+      Level: <span data-production-level="true"></span> |
+      Multiplier: x<span data-production-multiplier="true"></span>
+    `;
+    item.appendChild(costInfo);
 
     if (resource.recipe.workamount > 0) {
       const progress = document.createElement('div');
@@ -322,6 +403,31 @@ function wireAutoSellSelection() {
   return success;
 };
 
+(window as any).upgradeProduction = (resourceType: string) => {
+  const result = upgradeProduction(resourceType as ResourceType);
+  if (result.success) {
+    updateBalance();
+    updateProductionStatus();
+    updateTransactionLog();
+  }
+  return result;
+};
+
+(window as any).getProductionUpgradeCost = (resourceType: string) => {
+  return getProductionUpgradeCost(resourceType as ResourceType);
+};
+
+(window as any).buildProduction = (resourceType: string) => {
+  const success = buildProductionAction(resourceType as ResourceType);
+  if (success) {
+    updateBalance();
+    updateProductionStatus();
+    updateTransactionLog();
+  }
+  return success;
+};
+
+
 function getSelectedResource(selectId: string): ResourceType | null {
   const select = document.getElementById(selectId) as HTMLSelectElement | null;
   if (!select || !select.value) return null;
@@ -348,7 +454,7 @@ function getSelectedResource(selectId: string): ResourceType | null {
 // Initialize
 updateBalance();
 buildInventory();
-buildProduction();
+buildProductionUI();
 buildActionSelectors();
 updateGameDay();
 updateTransactionLog();

@@ -153,6 +153,11 @@
             color: #991b1b;
         }
 
+        .status-locked {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
         .progress-bar {
             width: 100%;
             height: 8px;
@@ -230,6 +235,18 @@
             padding: 4px 6px;
             border: 1px solid #d1d5db;
             border-radius: 6px;
+        }
+
+        .resource-item-disabled {
+            opacity: 0.65;
+            filter: grayscale(0.2);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
     </style>
 </head>

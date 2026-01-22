@@ -25,6 +25,10 @@ export class Resource {
   name: string;
   marketEquilibrium: number;
   initialSupply: number;
+  productionMultiplier: number;
+  productionUpgradeLevel: number;
+  productionStartCost: number;
+  productionBuilt: boolean;
   recipe: Recipe;
 
   constructor(
@@ -32,12 +36,20 @@ export class Resource {
     name: string,
     marketEquilibrium: number,
     initialSupply: number,
-    recipe: Recipe
+    recipe: Recipe,
+    productionMultiplier: number = 1,
+    productionUpgradeLevel: number = 0,
+    productionStartCost: number = 0,
+    productionBuilt: boolean = false
   ) {
     this.type = type;
     this.name = name;
     this.marketEquilibrium = marketEquilibrium;
     this.initialSupply = initialSupply;
+    this.productionMultiplier = productionMultiplier;
+    this.productionUpgradeLevel = productionUpgradeLevel;
+    this.productionStartCost = productionStartCost;
+    this.productionBuilt = productionBuilt;
     // Ensure runtime progress field exists on the recipe for persistence
     if (recipe.workamountCompleted === undefined) {
       recipe.workamountCompleted = 0;
