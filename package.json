@@ -3,9 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "build": "esbuild src/main.ts --bundle --format=esm --outfile=dist/main.js --target=es2020",
+    "dev": "esbuild src/main.ts --bundle --format=esm --outfile=dist/main.js --target=es2020 --watch & npx serve . -p 3000",
+    "start": "npm run build && npx serve . -p 3000"
   },
   "devDependencies": {
+    "esbuild": "^0.19.0",
     "vitest": "^1.0.0"
   }
 }

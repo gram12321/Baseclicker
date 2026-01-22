@@ -2,6 +2,7 @@ export enum ResourceType {
   Wood = 'Wood',
   Stone = 'Stone',
   Iron = 'Iron',
+  Grain = 'Grain',
   // Add more resource types as needed
 }
 

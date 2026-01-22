@@ -42,3 +42,33 @@ export function sellResource(
   transaction(total, `Sold ${amount} ${resourceType} for ${total}`);
   return true;
 }
+
+export function autoSellResource(
+  inventory: Inventory,
+  resourceType: ResourceType,
+  minKeep = 0,
+  maxSell?: number
+): number {
+  const available = inventory.getAmount(resourceType);
+  let sellAmount = Math.max(0, available - Math.max(0, minKeep));
+  if (maxSell !== undefined && maxSell > 0) {
+    sellAmount = Math.min(sellAmount, maxSell);
+  }
+  if (sellAmount <= 0) return 0;
+  return sellResource(inventory, resourceType, sellAmount) ? sellAmount : 0;
+}
+
+export function autoSellAll(
+  inventory: Inventory,
+  minKeepByType: Partial<Record<ResourceType, number>> = {}
+): number {
+  let totalSold = 0;
+  for (const resourceType of Object.values(ResourceType)) {
+    totalSold += autoSellResource(
+      inventory,
+      resourceType,
+      minKeepByType[resourceType] ?? 0
+    );
+  }
+  return totalSold;
+}

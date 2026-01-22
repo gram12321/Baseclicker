@@ -32,9 +32,19 @@ const ironRecipe: Recipe = {
   workamountCompleted: 0,
 };
 
+const grainRecipe: Recipe = {
+  inputs: [], // Grain is a base resource, no input required
+  outputResource: ResourceType.Grain,
+  outputAmount: 1,
+  workamount: 5,
+  active: false,
+  workamountCompleted: 0,
+};
+
 // Resource instances
 export const resources = {
   [ResourceType.Wood]: new Resource(ResourceType.Wood, 'Wood', 1, woodRecipe),
   [ResourceType.Stone]: new Resource(ResourceType.Stone, 'Stone', 2, stoneRecipe),
   [ResourceType.Iron]: new Resource(ResourceType.Iron, 'Iron', 5, ironRecipe),
+  [ResourceType.Grain]: new Resource(ResourceType.Grain, 'Grain', 1, grainRecipe),
 };
