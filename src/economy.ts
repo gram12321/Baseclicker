@@ -2,10 +2,22 @@
 import { Inventory } from './inventory';
 import { ResourceType, Resource } from './resource';
 import { resources } from './resourcesRegistry';
+import { formatCurrency } from './utils';
 
 import { addToBalance } from './gameState';
 
 const transactionLog: { amount: number; description: string; newBalance: number; timestamp: number }[] = [];
+const marketSupply: Record<ResourceType, number> = Object.values(ResourceType).reduce(
+  (acc, type) => {
+    acc[type] = resources[type].initialSupply;
+    return acc;
+  },
+  {} as Record<ResourceType, number>
+);
+
+export function getMarketSupply(resourceType: ResourceType): number {
+  return marketSupply[resourceType];
+} 
 
 export function transaction(amount: number, description: string): void {
   const newBalance = addToBalance(amount);
@@ -36,10 +48,12 @@ export function sellResource(
   if (amount <= 0) return false;
   if (!inventory.has(resourceType, amount)) return false;
   const resource: Resource = resources[resourceType];
-  const price = resource.getCurrentPrice();
+  const currentMarketSupply = getMarketSupply(resourceType);
+  const price = resource.getCurrentPrice(currentMarketSupply);
   if (!inventory.remove(resourceType, amount)) return false;
+  marketSupply[resourceType] = currentMarketSupply + amount;
   const total = price * amount;
-  transaction(total, `Sold ${amount} ${resourceType} for ${total}`);
+  transaction(total, `Sold ${amount} ${resourceType} for ${formatCurrency(total, { maxDecimals: 4, minDecimals: 0 })}`);
   return true;
 }
 

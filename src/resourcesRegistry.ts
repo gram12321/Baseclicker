@@ -43,8 +43,8 @@ const grainRecipe: Recipe = {
 
 // Resource instances
 export const resources = {
-  [ResourceType.Wood]: new Resource(ResourceType.Wood, 'Wood', 1, woodRecipe),
-  [ResourceType.Stone]: new Resource(ResourceType.Stone, 'Stone', 2, stoneRecipe),
-  [ResourceType.Iron]: new Resource(ResourceType.Iron, 'Iron', 5, ironRecipe),
-  [ResourceType.Grain]: new Resource(ResourceType.Grain, 'Grain', 1, grainRecipe),
+  [ResourceType.Wood]: new Resource(ResourceType.Wood, 'Wood', 10000, 10000, woodRecipe),
+  [ResourceType.Stone]: new Resource(ResourceType.Stone, 'Stone', 10000, 2000, stoneRecipe),
+  [ResourceType.Iron]: new Resource(ResourceType.Iron, 'Iron', 10000, 5000, ironRecipe),
+  [ResourceType.Grain]: new Resource(ResourceType.Grain, 'Grain', 10000, 10000, grainRecipe),
 };

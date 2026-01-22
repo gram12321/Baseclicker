@@ -5,7 +5,8 @@ import { resources } from './resourcesRegistry';
 import { manageProduction } from './production';
 import { tick, getGameday } from './game/gametick';
 import { getBalance, setAutoSellEnabled, isAutoSellEnabled, setAutoSellAmount, getAutoSellAmount } from './gameState';
-import { getTransactionLog, sellResource as sellResourceEconomy } from './economy';
+import { getMarketSupply, getTransactionLog, sellResource as sellResourceEconomy } from './economy';
+import { formatCurrency } from './utils';
 
 // Game State
 let inventory = new Inventory();
@@ -13,7 +14,10 @@ let inventory = new Inventory();
 // UI Update Functions
 function updateBalance() {
   const balance = getBalance();
-  document.getElementById('balance')!.textContent = `$${balance.toFixed(2)}`;
+  document.getElementById('balance')!.textContent = formatCurrency(balance, {
+    maxDecimals: 2,
+    minDecimals: 2,
+  });
 }
 
 function updateInventory() {
@@ -21,7 +25,16 @@ function updateInventory() {
   amounts.forEach((el) => {
     const type = el.dataset.resourceType as ResourceType | undefined;
     if (!type) return;
-    el.textContent = inventory.getAmount(type).toString();
+    const currentSupply = inventory.getAmount(type);
+    el.textContent = currentSupply.toString();
+    const priceEl = document.querySelector<HTMLElement>(
+      `[data-resource-price="true"][data-resource-type="${type}"]`
+    );
+    if (priceEl) {
+      const marketSupply = getMarketSupply(type);
+      const price = resources[type].getCurrentPrice(marketSupply);
+      priceEl.textContent = `(${formatCurrency(price, { maxDecimals: 4, minDecimals: 0 })} each)`;
+    }
   });
 }
 
@@ -62,12 +75,12 @@ function updateTransactionLog() {
   }
 
   logEl.innerHTML = transactions.slice().reverse().map(t => {
-    const sign = t.amount >= 0 ? '+' : '';
     const className = t.amount >= 0 ? 'transaction-positive' : 'transaction-negative';
     const time = new Date(t.timestamp).toLocaleTimeString();
+    const amount = formatCurrency(t.amount, { maxDecimals: 4, minDecimals: 0, showSign: true });
     return `
       <div class="transaction-item ${className}">
-        <strong>${sign}$${t.amount.toFixed(2)}</strong> - ${t.description}
+        <strong>${amount}</strong> - ${t.description}
         <div style="font-size: 0.8em; color: #9ca3af; margin-top: 4px;">${time}</div>
       </div>
     `;
@@ -127,7 +140,10 @@ function buildInventory() {
     name.textContent = resource.name;
     const price = document.createElement('span');
     price.className = 'resource-price';
-    price.textContent = `($${resource.basePrice} each)`;
+    price.dataset.resourcePrice = 'true';
+    price.dataset.resourceType = resourceType;
+    const initialPrice = resource.getCurrentPrice(getMarketSupply(resourceType));
+    price.textContent = `(${formatCurrency(initialPrice, { maxDecimals: 4, minDecimals: 0 })} each)`;
     label.appendChild(name);
     label.appendChild(price);
 
