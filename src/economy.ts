@@ -1,6 +1,7 @@
 // economy.ts
 import { Inventory } from './inventory';
-import { ResourceType, Resource } from './resource';
+import { Resource } from './resource';
+import { ResourceType } from './types';
 import { resources } from './resourcesRegistry';
 import { formatCurrency } from './utils';
 
@@ -17,7 +18,7 @@ const marketSupply: Record<ResourceType, number> = Object.values(ResourceType).r
 
 export function getMarketSupply(resourceType: ResourceType): number {
   return marketSupply[resourceType];
-} 
+}
 
 export function transaction(amount: number, description: string): void {
   const newBalance = addToBalance(amount);

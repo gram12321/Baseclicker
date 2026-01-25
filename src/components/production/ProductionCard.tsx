@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '../ui/button';
-import { Resource, ResourceType } from '../../resource';
+import { Resource } from '../../resource';
+import { ResourceType } from '../../types';
 import { formatCurrency } from '../../utils';
 
 interface ProductionCardProps {
@@ -100,7 +101,7 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
                                           onClick={() => onBuild(type)}
                                           className="col-span-2 bg-emerald-600 hover:bg-emerald-500 text-white"
                                     >
-                                          Build ({formatCurrency(resource.productionStartCost, { minDecimals: 0 })})
+                                          Build ({formatCurrency(resource.productionStartCost, { minDecimals: 0 })}{resource.productionResearchCost > 0 ? `, ${resource.productionResearchCost} RP` : ''})
                                     </Button>
                               ) : (
                                     <>

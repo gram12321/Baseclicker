@@ -1,17 +1,46 @@
-import { ResourceType } from './resource';
+import { ResourceType, Player } from './types';
 
-// Global game state: balance
-let balance = 0;
+// Global game state: player
+
+const player: Player = {
+	balance: 0,
+	research: 0,
+	researchers: 0,
+};
+
 const autoSellEnabled: Partial<Record<ResourceType, boolean>> = {};
 const autoSellAmount: Partial<Record<ResourceType, number>> = {};
 
 export function getBalance(): number {
-	return balance;
+	return player.balance;
 }
 
 export function addToBalance(amount: number): number {
-	balance += amount;
-	return balance;
+	player.balance += amount;
+	return player.balance;
+}
+
+export function getResearch(): number {
+	return player.research;
+}
+
+export function addToResearch(amount: number): number {
+	player.research += amount;
+	return player.research;
+}
+
+export function getResearchers(): number {
+	return player.researchers;
+}
+
+export function addResearchers(amount: number): number {
+	player.researchers += amount;
+	return player.researchers;
+}
+
+export function getResearcherCost(): number {
+	// Base cost 100, increases by 15% per researcher
+	return Math.floor(100 * Math.pow(1.15, player.researchers));
 }
 
 export function isAutoSellEnabled(resourceType: ResourceType): boolean {

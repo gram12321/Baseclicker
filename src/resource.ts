@@ -1,24 +1,5 @@
-export enum ResourceType {
-  Wood = 'Wood',
-  Stone = 'Stone',
-  Iron = 'Iron',
-  Grain = 'Grain',
-  // Add more resource types as needed
-}
+import { ResourceType, Recipe, RecipeInput } from './types';
 
-export interface RecipeInput {
-  resource: ResourceType;
-  amount: number;
-}
-
-export interface Recipe {
-  inputs: RecipeInput[];
-  outputResource: ResourceType;
-  outputAmount: number;
-  workamount: number;
-  active: boolean;
-  workamountCompleted?: number;
-}
 
 export class Resource {
   type: ResourceType;
@@ -28,6 +9,7 @@ export class Resource {
   productionMultiplier: number;
   productionUpgradeLevel: number;
   productionStartCost: number;
+  productionResearchCost: number;
   productionBuilt: boolean;
   recipe: Recipe;
 
@@ -40,6 +22,7 @@ export class Resource {
     productionMultiplier: number = 1,
     productionUpgradeLevel: number = 0,
     productionStartCost: number = 0,
+    productionResearchCost: number = 0,
     productionBuilt: boolean = false
   ) {
     this.type = type;
@@ -49,6 +32,7 @@ export class Resource {
     this.productionMultiplier = productionMultiplier;
     this.productionUpgradeLevel = productionUpgradeLevel;
     this.productionStartCost = productionStartCost;
+    this.productionResearchCost = productionResearchCost;
     this.productionBuilt = productionBuilt;
     // Ensure runtime progress field exists on the recipe for persistence
     if (recipe.workamountCompleted === undefined) {

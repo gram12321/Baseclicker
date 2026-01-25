@@ -1,7 +1,7 @@
-import { ResourceType } from './resource';
+import { ResourceType } from './types';
 import { resources } from './resourcesRegistry';
 import { Inventory } from './inventory';
-import { getBalance } from './gameState';
+import { getBalance, getResearch, addToResearch } from './gameState';
 import { transaction } from './economy';
 
 /**
@@ -119,10 +119,18 @@ const UPGRADE_DIMINISHING_FACTOR = 0.9;
 export function buildProduction(resource: ResourceType): boolean {
   const r = resources[resource];
   if (!r || r.productionBuilt) return false;
-  const cost = Math.max(0, r.productionStartCost);
-  if (getBalance() < cost) return false;
+
+  const moneyCost = Math.max(0, r.productionStartCost);
+  const researchCost = Math.max(0, r.productionResearchCost);
+
+  if (getBalance() < moneyCost) return false;
+  if (getResearch() < researchCost) return false;
+
   r.productionBuilt = true;
-  transaction(-cost, `Built ${r.name} production`);
+  transaction(-moneyCost, `Built ${r.name} production`);
+  if (researchCost > 0) {
+    addToResearch(-researchCost);
+  }
   return true;
 }
 

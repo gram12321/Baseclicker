@@ -3,8 +3,8 @@ import { runTickHooks } from '../hooks/gametickHook';
 import { advanceProduction } from '../production';
 import { Inventory } from '../inventory';
 import { autoSellResource } from '../economy';
-import { getAutoSellAmount, isAutoSellEnabled } from '../gameState';
-import { ResourceType } from '../resource';
+import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch } from '../gameState';
+import { ResourceType } from '../types';
 
 let gameday = 0;
 
@@ -13,6 +13,13 @@ let gameday = 0;
  */
 export function tick(inventory?: Inventory) {
     gameday += 1;
+
+    // Process research
+    const researchers = getResearchers();
+    if (researchers > 0) {
+        addToResearch(researchers * 1); // 1 RP per researcher per tick
+    }
+
     // Advance production first (no-op if inventory not provided)
     try {
         advanceProduction(inventory ?? null);

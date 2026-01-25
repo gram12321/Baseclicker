@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Inventory } from './inventory';
-import { Resource, ResourceType } from './resource';
+import { Resource } from './resource';
+import { ResourceType } from './types';
 import { resources } from './resourcesRegistry';
 import {
   manageProduction,
@@ -11,13 +12,18 @@ import {
 import { tick, getGameday } from './game/gametick';
 import {
   getBalance,
+  getResearch,
   setAutoSellEnabled,
   isAutoSellEnabled,
   setAutoSellAmount,
   getAutoSellAmount,
+  getResearchers,
+  addResearchers,
+  getResearcherCost,
+  addToBalance,
 } from './gameState';
 import { sellResource as sellResourceEconomy, getTransactionLog } from './economy';
-import { formatCurrency } from './utils';
+import { formatCurrency, formatNumber } from './utils';
 
 // Components
 import { Header } from './components/layout/Header';
@@ -51,12 +57,26 @@ export default function App() {
   }, [refreshToken]);
 
   const balance = getBalance();
+  const research = getResearch();
+  const researchers = getResearchers();
+  const researcherCost = getResearcherCost();
   const gameDay = getGameday();
   const transactions = getTransactionLog();
 
   const handleAdvanceDay = () => {
     tick(inventoryRef.current);
     refresh();
+  };
+
+  const handleHireResearcher = () => {
+    const cost = getResearcherCost();
+    if (balance >= cost) {
+      addToBalance(-cost);
+      addResearchers(1);
+      refresh();
+    } else {
+      showNotification(`Insufficient funds to hire Researcher (Cost: ${formatCurrency(cost)})`);
+    }
   };
 
   const handleAddResource = (type: ResourceType, amount: number) => {
@@ -127,12 +147,31 @@ export default function App() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Left Column: Stats & Inventory */}
           <div className="space-y-6 lg:col-span-1">
-            <StatCard
-              title="Current Balance"
-              value={formatCurrency(balance, { maxDecimals: 2, minDecimals: 2 })}
-              subtitle="Available Funds"
-              className="border-emerald-500/20 bg-emerald-950/10"
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <StatCard
+                title="Balance"
+                value={formatCurrency(balance, { maxDecimals: 2, minDecimals: 2 })}
+                subtitle="Available Funds"
+                className="border-emerald-500/20 bg-emerald-950/10"
+              />
+              <StatCard
+                title="Research"
+                value={formatNumber(research, { compact: true })}
+                subtitle="Research Points"
+                className="border-blue-500/20 bg-blue-950/10"
+              />
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg backdrop-blur-sm flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium uppercase tracking-wider text-slate-400">Researchers</h3>
+                <div className="text-2xl font-bold text-slate-100">{researchers}</div>
+                <div className="text-xs text-slate-500">+{researchers} RP/day</div>
+              </div>
+              <Button onClick={handleHireResearcher} size="sm" className="bg-blue-600 hover:bg-blue-500 text-white">
+                Hire ({formatCurrency(researcherCost, { maxDecimals: 0, showSign: false })})
+              </Button>
+            </div>
 
             <ActionPanel
               resources={resourceEntries}
