@@ -101,7 +101,7 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
                                           onClick={() => onBuild(type)}
                                           className="col-span-2 bg-emerald-600 hover:bg-emerald-500 text-white"
                                     >
-                                          Build ({formatCurrency(resource.productionStartCost, { minDecimals: 0 })}{resource.productionResearchCost > 0 ? `, ${resource.productionResearchCost} RP` : ''})
+                                          Build ({formatCurrency(resource.productionStartCost, { minDecimals: 0 })})
                                     </Button>
                               ) : (
                                     <>

@@ -11,6 +11,7 @@ export class Resource {
   productionStartCost: number;
   productionResearchCost: number;
   productionBuilt: boolean;
+  productionResearched: boolean;
   recipe: Recipe;
 
   constructor(
@@ -23,7 +24,8 @@ export class Resource {
     productionUpgradeLevel: number = 0,
     productionStartCost: number = 0,
     productionResearchCost: number = 0,
-    productionBuilt: boolean = false
+    productionBuilt: boolean = false,
+    productionResearched: boolean = false
   ) {
     this.type = type;
     this.name = name;
@@ -34,6 +36,7 @@ export class Resource {
     this.productionStartCost = productionStartCost;
     this.productionResearchCost = productionResearchCost;
     this.productionBuilt = productionBuilt;
+    this.productionResearched = productionResearched;
     // Ensure runtime progress field exists on the recipe for persistence
     if (recipe.workamountCompleted === undefined) {
       recipe.workamountCompleted = 0;

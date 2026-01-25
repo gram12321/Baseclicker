@@ -116,21 +116,31 @@ const UPGRADE_COST_GROWTH = 1.5;
 const UPGRADE_BASE_MULTIPLIER_INCREASE = 0.2;
 const UPGRADE_DIMINISHING_FACTOR = 0.9;
 
-export function buildProduction(resource: ResourceType): boolean {
+export function researchProduction(resource: ResourceType): boolean {
   const r = resources[resource];
-  if (!r || r.productionBuilt) return false;
+  if (!r || r.productionResearched) return false;
 
-  const moneyCost = Math.max(0, r.productionStartCost);
   const researchCost = Math.max(0, r.productionResearchCost);
 
-  if (getBalance() < moneyCost) return false;
   if (getResearch() < researchCost) return false;
 
-  r.productionBuilt = true;
-  transaction(-moneyCost, `Built ${r.name} production`);
+  r.productionResearched = true;
   if (researchCost > 0) {
     addToResearch(-researchCost);
   }
+  return true;
+}
+
+export function buildProduction(resource: ResourceType): boolean {
+  const r = resources[resource];
+  if (!r || r.productionBuilt || !r.productionResearched) return false;
+
+  const moneyCost = Math.max(0, r.productionStartCost);
+
+  if (getBalance() < moneyCost) return false;
+
+  r.productionBuilt = true;
+  transaction(-moneyCost, `Built ${r.name} production`);
   return true;
 }
 
@@ -174,5 +184,24 @@ export function upgradeProduction(
     newMultiplier: r.productionMultiplier,
     upgradeLevel: r.productionUpgradeLevel,
   };
+}
+
+/**
+ * Get the number of production facilities built for a resource type.
+ * Returns 1 if built, 0 if not built.
+ */
+export function getProductionCount(resource: ResourceType): number {
+  const r = resources[resource];
+  if (!r) return 0;
+  return r.productionBuilt ? 1 : 0;
+}
+
+/**
+ * Get the current upgrade level for a resource's production facility.
+ */
+export function getProductionLevel(resource: ResourceType): number {
+  const r = resources[resource];
+  if (!r) return 0;
+  return r.productionUpgradeLevel || 0;
 }
 

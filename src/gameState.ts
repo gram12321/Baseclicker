@@ -29,6 +29,16 @@ export function addToResearch(amount: number): number {
 	return player.research;
 }
 
+export function setBalance(amount: number): number {
+	player.balance = amount;
+	return player.balance;
+}
+
+export function setResearch(amount: number): number {
+	player.research = amount;
+	return player.research;
+}
+
 export function getResearchers(): number {
 	return player.researchers;
 }

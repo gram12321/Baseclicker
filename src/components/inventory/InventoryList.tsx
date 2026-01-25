@@ -1,7 +1,7 @@
 import React from 'react';
 import { Resource } from '../../resource';
 import { ResourceType } from '../../types';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, formatNumber } from '../../utils';
 import { Inventory } from '../../inventory';
 import { getMarketSupply } from '../../economy';
 
@@ -30,7 +30,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ resources, invento
                                                 </div>
                                           </div>
                                           <div className="text-xl font-mono font-semibold text-emerald-300">
-                                                {formatCurrency(amount, { maxDecimals: 0, minDecimals: 0, currencySymbol: '' })}
+                                                {formatNumber(amount, { decimals: 0 })}
                                           </div>
                                     </div>
                               );
