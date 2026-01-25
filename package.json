@@ -1,16 +1,37 @@
 {
   "name": "baseclicker",
   "version": "0.0.0",
+  "type": "module",
   "private": true,
   "scripts": {
-    "test": "vitest --run",
-    "build": "esbuild src/main.ts --bundle --format=esm --outfile=dist/main.js --target=es2020",
-    "dev": "concurrently \"esbuild src/main.ts --bundle --format=esm --outfile=dist/main.js --target=es2020 --watch\" \"npx serve . -p 3000\"",
-    "start": "npm run build && npx serve . -p 3000"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest --run"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "esbuild": "^0.19.0",
+    "@esbuild/win32-x64": "^0.27.2",
+    "@tailwindcss/cli": "^4.1.18",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "autoprefixer": "^10.4.23",
+    "esbuild": "^0.27.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
     "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
   }
 }
