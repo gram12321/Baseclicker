@@ -1,5 +1,5 @@
 import React from 'react';
-import { Resource } from '../../resource';
+import { Resource } from '../../resources/resource';
 import { ResourceType } from '../../types';
 import { formatCurrency, formatNumber } from '../../utils';
 import { Inventory } from '../../inventory';

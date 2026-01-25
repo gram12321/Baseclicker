@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Resource } from '../../resource';
+import { Resource } from '../../resources/resource';
 import { ResourceType } from '../../types';
 import { Button } from '../ui/button';
 import { formatCurrency } from '../../utils';

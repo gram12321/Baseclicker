@@ -6,12 +6,13 @@ import {
       getResearcherCost,
       addResearchers,
       addToBalance,
+      getGlobalProductionMultiplier,
 } from '../gameState';
 import { getGameday } from '../game/gametick';
 import { formatCurrency, formatNumber } from '../utils';
-import { Resource } from '../resource';
+import { Resource } from '../resources/resource';
 import { ResourceType } from '../types';
-import { resources } from '../resourcesRegistry';
+import { resources } from '../resources/resourcesRegistry';
 import { manageProduction, getProductionCount, getProductionLevel } from '../production';
 import { StatCard } from '../components/dashboard/StatCard';
 import { Button } from '../components/ui/button';
@@ -31,6 +32,7 @@ export default function CompanyOverview({ refresh }: CompanyOverviewProps) {
       const researchers = getResearchers();
       const researcherCost = getResearcherCost();
       const gameDay = getGameday();
+      const globalMultiplier = getGlobalProductionMultiplier();
 
       const showNotification = (msg: string) => {
             setErrorMsg(msg);
@@ -70,7 +72,7 @@ export default function CompanyOverview({ refresh }: CompanyOverviewProps) {
                   </div>
 
                   {/* Key Metrics */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         <StatCard
                               title="Balance"
                               value={formatCurrency(balance, { maxDecimals: 2, minDecimals: 2 })}
@@ -94,6 +96,12 @@ export default function CompanyOverview({ refresh }: CompanyOverviewProps) {
                               value={researchers.toString()}
                               subtitle={`+${researchers} RP/day`}
                               className="border-cyan-500/20 bg-cyan-950/10"
+                        />
+                        <StatCard
+                              title="Global Multiplier"
+                              value={`${globalMultiplier.toFixed(2)}x`}
+                              subtitle="Production Scaling"
+                              className="border-amber-500/20 bg-amber-950/10"
                         />
                   </div>
 

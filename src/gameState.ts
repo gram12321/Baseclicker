@@ -6,6 +6,7 @@ const player: Player = {
 	balance: 0,
 	research: 0,
 	researchers: 0,
+	productionMultiplier: 1.0,
 };
 
 const autoSellEnabled: Partial<Record<ResourceType, boolean>> = {};
@@ -67,4 +68,12 @@ export function getAutoSellAmount(resourceType: ResourceType): number {
 
 export function setAutoSellAmount(resourceType: ResourceType, amount: number): void {
 	autoSellAmount[resourceType] = Math.max(1, Math.floor(amount));
+}
+
+export function getGlobalProductionMultiplier(): number {
+	return player.productionMultiplier;
+}
+
+export function setGlobalProductionMultiplier(value: number): void {
+	player.productionMultiplier = Math.max(0, value);
 }

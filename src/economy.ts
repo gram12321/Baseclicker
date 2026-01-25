@@ -1,8 +1,8 @@
 // economy.ts
 import { Inventory } from './inventory';
-import { Resource } from './resource';
+import { Resource } from './resources/resource';
 import { ResourceType } from './types';
-import { resources } from './resourcesRegistry';
+import { resources } from './resources/resourcesRegistry';
 import { formatCurrency } from './utils';
 
 import { addToBalance } from './gameState';

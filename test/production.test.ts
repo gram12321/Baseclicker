@@ -7,13 +7,14 @@ describe('Production', () => {
 
   it('only advances production on active recipes', async () => {
     const { Inventory } = await import('../src/inventory');
-    const { resources } = await import('../src/resourcesRegistry');
+    const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
     const { advanceProduction, manageProduction } = await import('../src/production');
 
     const inv = new Inventory();
 
-    // Activate only Wood
+    // Ensure Wood is built so it can be activated
+    resources[ResourceType.Wood].productionBuilt = true;
     manageProduction(ResourceType.Wood, 'activate');
 
     advanceProduction(inv);
@@ -25,12 +26,13 @@ describe('Production', () => {
 
   it('workamount 0 requires inputs be present and consumes them before producing', async () => {
     const { Inventory } = await import('../src/inventory');
-    const { resources } = await import('../src/resourcesRegistry');
+    const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
     const { advanceProduction, manageProduction } = await import('../src/production');
 
     // Make Iron instantaneous (workamount = 0)
     resources[ResourceType.Iron].recipe.workamount = 0;
+    resources[ResourceType.Iron].productionBuilt = true;
     manageProduction(ResourceType.Iron, 'activate');
 
     const inv = new Inventory({ [ResourceType.Stone]: 2 });
@@ -43,12 +45,13 @@ describe('Production', () => {
 
   it('input is consumed for multiple productions when overflow restarts production', async () => {
     const { Inventory } = await import('../src/inventory');
-    const { resources } = await import('../src/resourcesRegistry');
+    const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
     const { advanceProduction, manageProduction } = await import('../src/production');
 
     // Ensure iron has workamount 1
     resources[ResourceType.Iron].recipe.workamount = 1;
+    resources[ResourceType.Iron].productionBuilt = true;
     // Seed partial progress so combined with baseProduction gives >=2
     resources[ResourceType.Iron].recipe.workamountCompleted = 0.5;
     manageProduction(ResourceType.Iron, 'activate');
@@ -67,11 +70,12 @@ describe('Production', () => {
 
   it('produces output and restarts when inputs available and workoverflow exists', async () => {
     const { Inventory } = await import('../src/inventory');
-    const { resources } = await import('../src/resourcesRegistry');
+    const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
     const { advanceProduction, manageProduction } = await import('../src/production');
 
     resources[ResourceType.Iron].recipe.workamount = 1;
+    resources[ResourceType.Iron].productionBuilt = true;
     resources[ResourceType.Iron].recipe.workamountCompleted = 0.75;
     manageProduction(ResourceType.Iron, 'activate');
 
@@ -87,11 +91,12 @@ describe('Production', () => {
 
   it('edge case: workamountCompleted === workamount triggers a production', async () => {
     const { Inventory } = await import('../src/inventory');
-    const { resources } = await import('../src/resourcesRegistry');
+    const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
     const { advanceProduction, manageProduction } = await import('../src/production');
 
     resources[ResourceType.Iron].recipe.workamount = 1;
+    resources[ResourceType.Iron].productionBuilt = true;
     resources[ResourceType.Iron].recipe.workamountCompleted = 1;
     manageProduction(ResourceType.Iron, 'activate');
 
@@ -107,11 +112,12 @@ describe('Production', () => {
 
   it('exact completion consumes inputs for one production and does not double-produce', async () => {
     const { Inventory } = await import('../src/inventory');
-    const { resources } = await import('../src/resourcesRegistry');
+    const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
     const { advanceProduction, manageProduction } = await import('../src/production');
 
     resources[ResourceType.Iron].recipe.workamount = 1;
+    resources[ResourceType.Iron].productionBuilt = true;
     resources[ResourceType.Iron].recipe.workamountCompleted = 1;
     manageProduction(ResourceType.Iron, 'activate');
 
@@ -128,12 +134,13 @@ describe('Production', () => {
 
   it('overflow ends at 0 and restarts next tick consuming again', async () => {
     const { Inventory } = await import('../src/inventory');
-    const { resources } = await import('../src/resourcesRegistry');
+    const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
     const { advanceProduction, manageProduction } = await import('../src/production');
 
     // Setup: partial progress so +1.6 yields exactly 2.0 -> two productions
     resources[ResourceType.Iron].recipe.workamount = 1;
+    resources[ResourceType.Iron].productionBuilt = true;
     resources[ResourceType.Iron].recipe.workamountCompleted = 0.4;
     manageProduction(ResourceType.Iron, 'activate');
 
@@ -153,5 +160,29 @@ describe('Production', () => {
     expect(inv.getAmount(ResourceType.Iron)).toBe(3);
     expect(inv.getAmount(ResourceType.Stone)).toBe(0);
     expect(resources[ResourceType.Iron].recipe.workamountCompleted).toBeCloseTo(0);
+  });
+
+  it('global production multiplier scales production', async () => {
+    const { Inventory } = await import('../src/inventory');
+    const { resources } = await import('../src/resources/resourcesRegistry');
+    const { ResourceType } = await import('../src/types');
+    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { setGlobalProductionMultiplier } = await import('../src/gameState');
+
+    const inv = new Inventory();
+    resources[ResourceType.Wood].productionBuilt = true;
+    manageProduction(ResourceType.Wood, 'activate');
+
+    // Default multiplier is 1.0, so 1 tick = 1 wood
+    advanceProduction(inv);
+    expect(inv.getAmount(ResourceType.Wood)).toBe(1);
+
+    // Set multiplier to 2.0, so 1 tick = 2 wood
+    setGlobalProductionMultiplier(2.0);
+    advanceProduction(inv);
+    expect(inv.getAmount(ResourceType.Wood)).toBe(3); // 1 from before + 2 new
+
+    // Reset multiplier
+    setGlobalProductionMultiplier(1.0);
   });
 });

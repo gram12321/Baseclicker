@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../ui/button';
-import { Resource } from '../../resource';
+import { Resource } from '../../resources/resource';
 import { ResourceType } from '../../types';
 import { formatCurrency } from '../../utils';
 

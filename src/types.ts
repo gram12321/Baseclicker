@@ -24,4 +24,5 @@ export interface Player {
       balance: number;
       research: number;
       researchers: number;
+      productionMultiplier: number;
 }

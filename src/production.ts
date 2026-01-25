@@ -1,7 +1,7 @@
 import { ResourceType } from './types';
-import { resources } from './resourcesRegistry';
+import { resources } from './resources/resourcesRegistry';
 import { Inventory } from './inventory';
-import { getBalance, getResearch, addToResearch } from './gameState';
+import { getBalance, getResearch, addToResearch, getGlobalProductionMultiplier } from './gameState';
 import { transaction } from './economy';
 
 /**
@@ -54,10 +54,10 @@ export function manageProduction(
  * `baseProduction * globalMultiplier * resource.productionMultiplier`.
  * If no inventory has been set via `setProductionInventory`, this is a no-op.
  */
-export function advanceProduction(inventory: Inventory | null, baseProduction = 1, modifiers: number[] = []): void {
+export function advanceProduction(inventory: Inventory | null, baseProduction = 1): void {
   if (!inventory) return;
 
-  const globalMultiplier = modifiers.length ? modifiers.reduce((a, b) => a * b, 1) : 1;
+  const globalMultiplier = getGlobalProductionMultiplier();
 
   for (const r of Object.values(resources)) {
     const recipe = r.recipe;

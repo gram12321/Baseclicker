@@ -1,4 +1,4 @@
-import { ResourceType, Recipe, RecipeInput } from './types';
+import { ResourceType, Recipe, RecipeInput } from '../types';
 
 
 export class Resource {

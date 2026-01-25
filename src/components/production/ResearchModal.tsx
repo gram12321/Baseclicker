@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { Resource } from '../../resource';
+import { Resource } from '../../resources/resource';
 import { ResourceType } from '../../types';
-import { resources } from '../../resourcesRegistry';
+import { resources } from '../../resources/resourcesRegistry';
 import { formatNumber } from '../../utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';

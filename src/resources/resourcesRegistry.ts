@@ -1,5 +1,5 @@
 import { Resource } from './resource';
-import { ResourceType, Recipe } from './types';
+import { ResourceType, Recipe } from '../types';
 
 // Example recipes
 const woodRecipe: Recipe = {
