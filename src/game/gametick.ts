@@ -5,6 +5,7 @@ import { Inventory } from '../inventory';
 import { autoSellResource } from '../economy';
 import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch } from '../gameState';
 import { ResourceType } from '../types';
+import { achievementService } from '../achievements/achievementService';
 
 let gameday = 0;
 
@@ -34,6 +35,12 @@ export function tick(inventory?: Inventory) {
         }
     }
     runTickHooks();
+
+    // Check achievements
+    const unlocked = achievementService.checkAchievements();
+    if (unlocked.length > 0) {
+        console.log('Achievements Unlocked:', unlocked);
+    }
 }
 
 /**

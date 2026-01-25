@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Inventory } from './inventory';
 
@@ -8,10 +8,12 @@ import Finance from './pages/Finance';
 import InventoryPage from './pages/Inventory';
 import CompanyOverview from './pages/CompanyOverview';
 import AdminDashboard from './pages/AdminDashboard';
+import Achievements from './pages/Achievements';
 
 // Components
 import { Header } from './components/layout/Header';
 import { getGameday } from './game/gametick';
+import { achievementService } from './achievements/achievementService';
 
 function Navigation() {
   const location = useLocation();
@@ -21,6 +23,7 @@ function Navigation() {
     { path: '/production', label: 'Production', icon: '🏭' },
     { path: '/inventory', label: 'Inventory', icon: '📦' },
     { path: '/finance', label: 'Finance', icon: '💰' },
+    { path: '/achievements', label: 'Achievements', icon: '🏆' },
     { path: '/admin', label: 'Admin', icon: '⚙️' },
   ];
 
@@ -56,6 +59,10 @@ function AppContent() {
   const inventoryRef = useRef(new Inventory());
   const [refreshToken, setRefreshToken] = useState(0);
 
+  useEffect(() => {
+    achievementService.setInventory(inventoryRef.current);
+  }, []);
+
   const refresh = () => {
     setRefreshToken((value) => value + 1);
   };
@@ -85,6 +92,10 @@ function AppContent() {
           <Route
             path="/finance"
             element={<Finance />}
+          />
+          <Route
+            path="/achievements"
+            element={<Achievements />}
           />
           <Route
             path="/admin"

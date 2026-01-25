@@ -25,8 +25,15 @@ export const InventoryList: React.FC<InventoryListProps> = ({ resources, invento
                                     >
                                           <div>
                                                 <div className="font-semibold text-slate-100">{resource.name}</div>
-                                                <div className="text-sm text-slate-400">
-                                                      {formatCurrency(price, { maxDecimals: 2, minDecimals: 2 })} each
+                                                <div className="flex items-center gap-2 text-sm">
+                                                      <span className="text-slate-400">
+                                                            {formatCurrency(price, { maxDecimals: 2, minDecimals: 2 })} each
+                                                      </span>
+                                                      {resource.priceModifier > 1 && (
+                                                            <span className="flex items-center rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 Ring-1 ring-emerald-500/20">
+                                                                  +{formatNumber(resource.priceModifier - 1, { percent: true, decimals: 0 })}
+                                                            </span>
+                                                      )}
                                                 </div>
                                           </div>
                                           <div className="text-xl font-mono font-semibold text-emerald-300">

@@ -12,6 +12,7 @@ export class Resource {
   productionResearchCost: number;
   productionBuilt: boolean;
   productionResearched: boolean;
+  priceModifier: number;
   recipe: Recipe;
 
   constructor(
@@ -37,6 +38,7 @@ export class Resource {
     this.productionResearchCost = productionResearchCost;
     this.productionBuilt = productionBuilt;
     this.productionResearched = productionResearched;
+    this.priceModifier = 1.0;
     // Ensure runtime progress field exists on the recipe for persistence
     if (recipe.workamountCompleted === undefined) {
       recipe.workamountCompleted = 0;
@@ -49,6 +51,7 @@ export class Resource {
     this.productionUpgradeLevel = 0;
     this.productionBuilt = false;
     this.productionResearched = false;
+    // Note: priceModifier is specifically NOT reset here as per requirements
     if (this.recipe) {
       this.recipe.active = false;
       this.recipe.workamountCompleted = 0;
@@ -57,7 +60,7 @@ export class Resource {
 
   // Calculate current price based on supply vs. market equilibrium.
   getCurrentPrice(currentSupply: number = this.initialSupply, modifiers: number[] = []): number {
-    let price = this.marketEquilibrium / Math.max(currentSupply, 1);
+    let price = (this.marketEquilibrium / Math.max(currentSupply, 1)) * this.priceModifier;
     for (const mod of modifiers) {
       price *= mod;
     }
