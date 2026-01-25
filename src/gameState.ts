@@ -77,3 +77,21 @@ export function getGlobalProductionMultiplier(): number {
 export function setGlobalProductionMultiplier(value: number): void {
 	player.productionMultiplier = Math.max(0, value);
 }
+
+export function resetGameState(): number {
+	const bonus = player.balance / 1000000;
+	player.productionMultiplier += bonus;
+
+	player.balance = 0;
+	player.research = 0;
+
+	// Clear auto-sell records
+	for (const key in autoSellEnabled) {
+		delete autoSellEnabled[key as ResourceType];
+	}
+	for (const key in autoSellAmount) {
+		delete autoSellAmount[key as ResourceType];
+	}
+
+	return bonus;
+}

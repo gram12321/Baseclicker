@@ -72,7 +72,7 @@ function AppContent() {
         <Routes>
           <Route
             path="/"
-            element={<CompanyOverview refresh={refresh} />}
+            element={<CompanyOverview inventoryRef={inventoryRef} refresh={refresh} />}
           />
           <Route
             path="/production"

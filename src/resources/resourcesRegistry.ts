@@ -47,3 +47,9 @@ export const resources = {
   [ResourceType.Iron]: new Resource(ResourceType.Iron, 'Iron', 10000, 5000, ironRecipe, 1, 0, 150, 50, false),
   [ResourceType.Grain]: new Resource(ResourceType.Grain, 'Grain', 10000, 10000, grainRecipe, 1, 0, 60, 5, false),
 };
+
+export function resetResources(): void {
+  for (const resource of Object.values(resources)) {
+    resource.reset();
+  }
+}

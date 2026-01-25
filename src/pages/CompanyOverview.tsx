@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, MutableRefObject } from 'react';
 import {
       getBalance,
       getResearch,
@@ -17,14 +17,17 @@ import { manageProduction, getProductionCount, getProductionLevel } from '../pro
 import { StatCard } from '../components/dashboard/StatCard';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { resetGame } from '../game/gameControl';
+import { Inventory } from '../inventory';
 
 const resourceEntries = Object.entries(resources) as [ResourceType, Resource][];
 
 interface CompanyOverviewProps {
+      inventoryRef?: MutableRefObject<Inventory>;
       refresh: () => void;
 }
 
-export default function CompanyOverview({ refresh }: CompanyOverviewProps) {
+export default function CompanyOverview({ inventoryRef, refresh }: CompanyOverviewProps) {
       const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
       const balance = getBalance();
@@ -47,6 +50,16 @@ export default function CompanyOverview({ refresh }: CompanyOverviewProps) {
                   refresh();
             } else {
                   showNotification(`Insufficient funds to hire Researcher (Cost: ${formatCurrency(cost)})`);
+            }
+      };
+
+      const handleResetGame = () => {
+            if (window.confirm('Are you absolutely sure you want to reset the game? This will erase ALL progress!')) {
+                  if (inventoryRef?.current) {
+                        resetGame(inventoryRef.current);
+                        refresh();
+                        alert('Game progress has been cleared.');
+                  }
             }
       };
 
@@ -179,6 +192,28 @@ export default function CompanyOverview({ refresh }: CompanyOverviewProps) {
                               </div>
                         </CardContent>
                   </Card>
+
+                  {/* Danger Zone */}
+                  <div className="rounded-2xl border border-red-900/30 bg-red-950/10 p-6 shadow-lg backdrop-blur-sm mt-12">
+                        <h2 className="text-xl font-semibold text-red-400 mb-4 flex items-center gap-2">
+                              <span>⚠️</span> Company Liquidation
+                        </h2>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 bg-red-950/20 rounded-xl border border-red-900/20">
+                              <div>
+                                    <h3 className="font-medium text-slate-100 text-base">Full Reset</h3>
+                                    <p className="text-sm text-slate-400">
+                                          Terminate all operations and wipe all progress, balance, and inventory.
+                                    </p>
+                              </div>
+                              <Button
+                                    onClick={handleResetGame}
+                                    variant="destructive"
+                                    className="w-full md:w-auto px-8 py-6 h-auto font-bold bg-red-600 hover:bg-red-500 shadow-lg shadow-red-900/20"
+                              >
+                                    LIQUIDATE ALL ASSETS
+                              </Button>
+                        </div>
+                  </div>
             </div>
       );
 }

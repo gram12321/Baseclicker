@@ -30,5 +30,11 @@ export class Inventory {
     return true;
   }
 
+  clear(): void {
+    for (const r of Object.values(ResourceType)) {
+      this.amounts[r] = 0;
+    }
+  }
+
 
 }

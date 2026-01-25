@@ -87,3 +87,10 @@ export function autoSellAll(
   }
   return totalSold;
 }
+
+export function resetEconomy(): void {
+  // Reset market supply
+  for (const type of Object.values(ResourceType)) {
+    marketSupply[type] = resources[type].initialSupply;
+  }
+}

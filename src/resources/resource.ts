@@ -44,6 +44,17 @@ export class Resource {
     this.recipe = recipe;
   }
 
+  reset(): void {
+    this.productionMultiplier = 1;
+    this.productionUpgradeLevel = 0;
+    this.productionBuilt = false;
+    this.productionResearched = false;
+    if (this.recipe) {
+      this.recipe.active = false;
+      this.recipe.workamountCompleted = 0;
+    }
+  }
+
   // Calculate current price based on supply vs. market equilibrium.
   getCurrentPrice(currentSupply: number = this.initialSupply, modifiers: number[] = []): number {
     let price = this.marketEquilibrium / Math.max(currentSupply, 1);

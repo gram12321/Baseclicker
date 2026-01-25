@@ -185,4 +185,32 @@ describe('Production', () => {
     // Reset multiplier
     setGlobalProductionMultiplier(1.0);
   });
+
+  it('global production multiplier affects partial progress on complex recipes', async () => {
+    const { Inventory } = await import('../src/inventory');
+    const { resources } = await import('../src/resources/resourcesRegistry');
+    const { ResourceType } = await import('../src/types');
+    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { setGlobalProductionMultiplier } = await import('../src/gameState');
+
+    const inv = new Inventory();
+
+    // Grain has workamount 5
+    resources[ResourceType.Grain].productionBuilt = true;
+    manageProduction(ResourceType.Grain, 'activate');
+    resources[ResourceType.Grain].recipe.workamountCompleted = 0;
+
+    // With 0.5x multiplier, adding 1 base work per tick results in 0.5 progress
+    setGlobalProductionMultiplier(0.5);
+    advanceProduction(inv, 1);
+    expect(resources[ResourceType.Grain].recipe.workamountCompleted).toBe(0.5);
+    expect(inv.getAmount(ResourceType.Grain)).toBe(0);
+
+    // With 10x multiplier, adding 1 base work results in 10 work -> 2 completions (workamount 5)
+    setGlobalProductionMultiplier(10.0);
+    advanceProduction(inv, 1);
+    expect(inv.getAmount(ResourceType.Grain)).toBe(2);
+    // 0.5 (prev) + 10.0 (new) = 10.5 total. 2 completions = 10.0. Remainder 0.5.
+    expect(resources[ResourceType.Grain].recipe.workamountCompleted).toBeCloseTo(0.5);
+  });
 });

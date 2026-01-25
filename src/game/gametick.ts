@@ -43,3 +43,7 @@ export function getGameday() {
     return gameday;
 }
 
+export function resetGameday(): void {
+    gameday = 0;
+}
+
