@@ -4,8 +4,10 @@ import { ResourceType, Recipe, RecipeInput } from '../types';
 export class Resource {
   type: ResourceType;
   name: string;
-  marketEquilibrium: number;
-  initialSupply: number;
+  localbenchmarksupply: number;
+  localinitsupply: number;
+  globalbenchmarksupply: number;
+  globalinitsupply: number;
   productionMultiplier: number;
   productionUpgradeLevel: number;
   productionStartCost: number;
@@ -18,8 +20,10 @@ export class Resource {
   constructor(
     type: ResourceType,
     name: string,
-    marketEquilibrium: number,
-    initialSupply: number,
+    localbenchmarksupply: number,
+    localinitsupply: number,
+    globalbenchmarksupply: number,
+    globalinitsupply: number,
     recipe: Recipe,
     productionMultiplier: number = 1,
     productionUpgradeLevel: number = 0,
@@ -30,8 +34,10 @@ export class Resource {
   ) {
     this.type = type;
     this.name = name;
-    this.marketEquilibrium = marketEquilibrium;
-    this.initialSupply = initialSupply;
+    this.localbenchmarksupply = localbenchmarksupply;
+    this.localinitsupply = localinitsupply;
+    this.globalbenchmarksupply = globalbenchmarksupply;
+    this.globalinitsupply = globalinitsupply;
     this.productionMultiplier = productionMultiplier;
     this.productionUpgradeLevel = productionUpgradeLevel;
     this.productionStartCost = productionStartCost;
@@ -58,9 +64,18 @@ export class Resource {
     }
   }
 
-  // Calculate current price based on supply vs. market equilibrium.
-  getCurrentPrice(currentSupply: number = this.initialSupply, modifiers: number[] = []): number {
-    let price = (this.marketEquilibrium / Math.max(currentSupply, 1)) * this.priceModifier;
+  // Calculate current local price based on supply vs. local benchmark supply.
+  getLocalPrice(currentSupply: number = this.localinitsupply, modifiers: number[] = []): number {
+    let price = (this.localbenchmarksupply / Math.max(currentSupply, 1)) * this.priceModifier;
+    for (const mod of modifiers) {
+      price *= mod;
+    }
+    return price;
+  }
+
+  // Calculate current global price based on supply vs. global benchmark supply.
+  getGlobalPrice(currentSupply: number = this.globalinitsupply, modifiers: number[] = []): number {
+    let price = (this.globalbenchmarksupply / Math.max(currentSupply, 1)) * this.priceModifier;
     for (const mod of modifiers) {
       price *= mod;
     }

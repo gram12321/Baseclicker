@@ -2,17 +2,24 @@
 import { useState } from 'react';
 import { getBalance, setBalance, getResearch, setResearch } from '../gameState';
 import { formatCurrency } from '../utils';
+import { ResourceType } from '../types';
+import { resources } from '../resources/resourcesRegistry';
+import { Inventory } from '../inventory';
 
 interface AdminDashboardProps {
       refresh?: () => void;
+      inventoryRef?: React.MutableRefObject<Inventory>;
 }
 
-export default function AdminDashboard({ refresh }: AdminDashboardProps) {
+export default function AdminDashboard({ refresh, inventoryRef }: AdminDashboardProps) {
       const [balanceInput, setBalanceInput] = useState<string>('');
       const [researchInput, setResearchInput] = useState<string>('');
 
       const currentBalance = getBalance();
       const currentResearch = getResearch();
+
+      const [resType, setResType] = useState<ResourceType>(ResourceType.Wood);
+      const [resAmount, setResAmount] = useState<string>('100');
 
       const handleSetBalance = () => {
             const amount = parseInt(balanceInput.replace(/,/g, ''), 10);
@@ -28,6 +35,14 @@ export default function AdminDashboard({ refresh }: AdminDashboardProps) {
             if (!isNaN(amount)) {
                   setResearch(amount);
                   setResearchInput('');
+                  if (refresh) refresh();
+            }
+      };
+
+      const handleAddResource = () => {
+            const amount = parseInt(resAmount, 10);
+            if (!isNaN(amount) && inventoryRef?.current) {
+                  inventoryRef.current.add(resType, amount);
                   if (refresh) refresh();
             }
       };
@@ -115,9 +130,42 @@ export default function AdminDashboard({ refresh }: AdminDashboardProps) {
                                                       Set
                                                 </button>
                                           </div>
-                                          <p className="text-xs text-slate-500">
-                                                Directly sets the player's research points to this value.
-                                          </p>
+                                    </div>
+                              </div>
+                        </div>
+
+                        {/* Inventory Controls */}
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg backdrop-blur-sm">
+                              <h2 className="text-xl font-semibold text-slate-100 mb-4 flex items-center gap-2">
+                                    <span>📦</span> Inventory Management
+                              </h2>
+
+                              <div className="space-y-4">
+                                    <div className="space-y-2">
+                                          <label className="text-sm font-medium text-slate-300">Add Resource</label>
+                                          <div className="grid grid-cols-2 gap-2">
+                                                <select
+                                                      value={resType}
+                                                      onChange={(e) => setResType(e.target.value as ResourceType)}
+                                                      className="bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                >
+                                                      {Object.values(ResourceType).map(type => (
+                                                            <option key={type} value={type}>{type}</option>
+                                                      ))}
+                                                </select>
+                                                <input
+                                                      type="number"
+                                                      value={resAmount}
+                                                      onChange={(e) => setResAmount(e.target.value)}
+                                                      className="bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                />
+                                          </div>
+                                          <button
+                                                onClick={handleAddResource}
+                                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-900/20 active:translate-y-0.5"
+                                          >
+                                                Add to Inventory
+                                          </button>
                                     </div>
                               </div>
                         </div>

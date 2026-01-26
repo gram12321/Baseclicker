@@ -1,5 +1,7 @@
 
 import { AchievementConfig, AchievementCategory, AchievementLevel } from './types';
+import { ResourceType } from '../types';
+import { RESOURCE_ICONS } from '../resourceIcons';
 
 function toRoman(num: number): string {
       if (num > 10) return num.toString();
@@ -104,7 +106,7 @@ export const WOOD_PRODUCTION_ACHIEVEMENTS = createTieredAchievements(
       'wood_prod',
       'Lumberjack',
       'Produce {threshold} Wood in total',
-      '🪵',
+      RESOURCE_ICONS[ResourceType.Wood],
       'Resources',
       'resource_total',
       generateThresholds(100, 20),
@@ -116,7 +118,7 @@ export const IRON_PRODUCTION_ACHIEVEMENTS = createTieredAchievements(
       'iron_prod',
       'Blacksmith',
       'Produce {threshold} Iron in total',
-      '⛓️',
+      RESOURCE_ICONS[ResourceType.Iron],
       'Resources',
       'resource_total',
       generateThresholds(100, 20),
@@ -128,7 +130,7 @@ export const STONE_PRODUCTION_ACHIEVEMENTS = createTieredAchievements(
       'stone_prod',
       'Mason',
       'Produce {threshold} Stone in total',
-      '🪨',
+      RESOURCE_ICONS[ResourceType.Stone],
       'Resources',
       'resource_total',
       generateThresholds(100, 20),
@@ -140,7 +142,7 @@ export const GRAIN_PRODUCTION_ACHIEVEMENTS = createTieredAchievements(
       'grain_prod',
       'Harvester',
       'Produce {threshold} Grain in total',
-      '🌾',
+      RESOURCE_ICONS[ResourceType.Grain],
       'Resources',
       'resource_total',
       generateThresholds(100, 20),

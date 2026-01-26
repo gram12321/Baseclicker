@@ -38,10 +38,7 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
             setTimeout(() => setErrorMsg(null), 3000);
       };
 
-      const handleAdvanceDay = () => {
-            tick(inventoryRef.current);
-            refresh();
-      };
+
 
       const handleActivate = (type: ResourceType) => {
             manageProduction(type, 'activate');
@@ -138,9 +135,6 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
                                                 Research Facilities
                                           </Button>
                                     )}
-                                    <Button onClick={handleAdvanceDay} size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
-                                          Advance Day
-                                    </Button>
                               </div>
                         </div>
 

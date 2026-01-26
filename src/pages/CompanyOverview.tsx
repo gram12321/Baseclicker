@@ -81,7 +81,6 @@ export default function CompanyOverview({ inventoryRef, refresh }: CompanyOvervi
 
                   <div>
                         <h1 className="text-2xl font-bold text-slate-100">Company Overview</h1>
-                        <p className="text-sm text-slate-400 mt-1">Day {gameDay}</p>
                   </div>
 
                   {/* Key Metrics */}
