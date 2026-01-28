@@ -11,6 +11,7 @@ const player: Player = {
 
 const autoSellEnabled: Partial<Record<ResourceType, boolean>> = {};
 const autoSellAmount: Partial<Record<ResourceType, number>> = {};
+const autoSellMinKeep: Partial<Record<ResourceType, number>> = {};
 
 export function getBalance(): number {
 	return player.balance;
@@ -54,6 +55,7 @@ export function getResearcherCost(): number {
 	return Math.floor(100 * Math.pow(1.15, player.researchers));
 }
 
+
 export function isAutoSellEnabled(resourceType: ResourceType): boolean {
 	return autoSellEnabled[resourceType] ?? false;
 }
@@ -69,6 +71,15 @@ export function getAutoSellAmount(resourceType: ResourceType): number {
 export function setAutoSellAmount(resourceType: ResourceType, amount: number): void {
 	autoSellAmount[resourceType] = Math.max(1, Math.floor(amount));
 }
+
+export function getAutoSellMinKeep(resourceType: ResourceType): number {
+	return autoSellMinKeep[resourceType] ?? 0;
+}
+
+export function setAutoSellMinKeep(resourceType: ResourceType, amount: number): void {
+	autoSellMinKeep[resourceType] = Math.max(0, Math.floor(amount));
+}
+
 
 export function getGlobalProductionMultiplier(): number {
 	return player.productionMultiplier;
@@ -92,9 +103,13 @@ export function resetGameState(): number {
 	for (const key in autoSellAmount) {
 		delete autoSellAmount[key as ResourceType];
 	}
+	for (const key in autoSellMinKeep) {
+		delete autoSellMinKeep[key as ResourceType];
+	}
 
 	return bonus;
 }
+
 
 export function hireResearcher(): boolean {
 	const cost = getResearcherCost();

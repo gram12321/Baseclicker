@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Resource } from '../lib/resources/resource';
 import { ResourceType } from '../utils/types';
 import { resources } from '../lib/resources/resourcesRegistry';
-import { isAutoSellEnabled, setAutoSellEnabled, setAutoSellAmount, getAutoSellAmount } from '../lib/game/gameState';
+import { isAutoSellEnabled, setAutoSellEnabled, setAutoSellAmount, getAutoSellAmount, getAutoSellMinKeep, setAutoSellMinKeep } from '../lib/game/gameState';
 import { sellResource as sellResourceEconomy } from '../lib/market/market';
 import { Inventory } from '../lib/inventory';
 import { getLocalMarketSupply, getGlobalMarketSupply } from '../lib/market/market';
@@ -11,7 +11,8 @@ import { formatCurrency, formatNumber } from '../utils/utils';
 import { getResourceIcon } from '../utils/resourceIcons';
 
 // Icons
-import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft } from 'lucide-react';
+import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft, Settings } from 'lucide-react';
+
 
 interface InventoryPageProps {
       inventoryRef: React.MutableRefObject<Inventory>;
@@ -26,6 +27,7 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
       const [tradeAmounts, setTradeAmounts] = useState<Record<string, number>>(
             Object.fromEntries(resourceEntries.map(([type]) => [type, 1]))
       );
+      const [expandedResource, setExpandedResource] = useState<ResourceType | null>(null);
 
       const handleSliderChange = (type: ResourceType, value: number) => {
             setTradeAmounts(prev => ({ ...prev, [type]: value }));
@@ -36,9 +38,22 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
             if (success) refresh();
       };
 
-      const handleToggleAutosell = (type: ResourceType, enabled: boolean, amount: number) => {
+      const handleToggleAutosell = (type: ResourceType, enabled: boolean) => {
             setAutoSellEnabled(type, enabled);
-            setAutoSellAmount(type, amount);
+            // If enabling for the first time on 0, set defaults
+            if (enabled && getAutoSellAmount(type) <= 1) {
+                  setAutoSellAmount(type, 50); // Default sell amount
+                  setAutoSellMinKeep(type, 0); // Default keep amount
+            }
+            refresh();
+      };
+
+      const handleUpdateAutosellConfig = (type: ResourceType, field: 'keep' | 'sell', value: number) => {
+            if (field === 'keep') {
+                  setAutoSellMinKeep(type, value);
+            } else {
+                  setAutoSellAmount(type, value);
+            }
             refresh();
       };
 
@@ -83,169 +98,227 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                 const globalPrice = resource.getGlobalPrice(globalSupply);
                                                 const autosell = isAutoSellEnabled(type);
                                                 const currentTradeAmount = tradeAmounts[type] || 1;
-                                                const currentAutosellAmount = getAutoSellAmount(type);
+                                                const autoSellAmount = getAutoSellAmount(type);
+                                                const autoSellMinKeep = getAutoSellMinKeep(type);
+                                                const isExpanded = expandedResource === type;
 
                                                 return (
-                                                      <tr
-                                                            key={`inventory-${type}`}
-                                                            className="group transition-colors hover:bg-slate-800/30"
-                                                      >
-                                                            {/* Resource */}
-                                                            <td className="px-4 py-4">
-                                                                  <div className="flex items-center gap-3">
-                                                                        <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-lg">
-                                                                              {getResourceIcon(type)}
+                                                      <React.Fragment key={`inventory-${type}`}>
+                                                            <tr className={`group transition-colors ${isExpanded ? 'bg-slate-800/50' : 'hover:bg-slate-800/30'}`}>
+                                                                  {/* Resource */}
+                                                                  <td className="px-4 py-4">
+                                                                        <div className="flex items-center gap-3">
+                                                                              <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-lg">
+                                                                                    {getResourceIcon(type)}
+                                                                              </div>
+                                                                              <div>
+                                                                                    <div className="font-semibold text-slate-100">{resource.name}</div>
+                                                                                    <div className="text-[10px] text-slate-500 uppercase tracking-tighter">Tier 1</div>
+                                                                              </div>
                                                                         </div>
-                                                                        <div>
-                                                                              <div className="font-semibold text-slate-100">{resource.name}</div>
-                                                                              <div className="text-[10px] text-slate-500 uppercase tracking-tighter">Tier 1</div>
+                                                                  </td>
+
+                                                                  {/* Local Price */}
+                                                                  <td className="px-4 py-4 text-center">
+                                                                        <div className="inline-flex flex-col items-center">
+                                                                              <div className="flex items-center gap-1 font-mono font-medium text-amber-400">
+                                                                                    {formatCurrency(localPrice, { maxDecimals: 2, minDecimals: 2 })}
+                                                                                    <Coins className="w-3 h-3" />
+                                                                              </div>
                                                                         </div>
-                                                                  </div>
-                                                            </td>
+                                                                  </td>
 
-                                                            {/* Local Price */}
-                                                            <td className="px-4 py-4 text-center">
-                                                                  <div className="inline-flex flex-col items-center">
-                                                                        <div className="flex items-center gap-1 font-mono font-medium text-amber-400">
-                                                                              {formatCurrency(localPrice, { maxDecimals: 2, minDecimals: 2 })}
-                                                                              <Coins className="w-3 h-3" />
+                                                                  {/* Global Price */}
+                                                                  <td className="px-4 py-4 text-center text-slate-400">
+                                                                        <div className="inline-flex flex-col items-center">
+                                                                              <div className="flex items-center gap-1 font-mono">
+                                                                                    {formatCurrency(globalPrice, { maxDecimals: 2, minDecimals: 2 })}
+                                                                                    <Globe className="w-3 h-3 text-slate-500" />
+                                                                              </div>
                                                                         </div>
-                                                                  </div>
-                                                            </td>
+                                                                  </td>
 
-                                                            {/* Global Price */}
-                                                            <td className="px-4 py-4 text-center text-slate-400">
-                                                                  <div className="inline-flex flex-col items-center">
-                                                                        <div className="flex items-center gap-1 font-mono">
-                                                                              {formatCurrency(globalPrice, { maxDecimals: 2, minDecimals: 2 })}
-                                                                              <Globe className="w-3 h-3 text-slate-500" />
+                                                                  {/* Local Quality */}
+                                                                  <td className="px-4 py-4 text-center">
+                                                                        <span className="text-slate-500 font-mono text-xs italic">1.00</span>
+                                                                  </td>
+
+                                                                  {/* Global Quality */}
+                                                                  <td className="px-4 py-4 text-center">
+                                                                        <span className="text-slate-500 font-mono text-xs italic">1.00</span>
+                                                                  </td>
+
+                                                                  {/* Local Market Supply */}
+                                                                  <td className="px-4 py-4 text-center">
+                                                                        <div className="font-mono text-xs text-slate-300">
+                                                                              {formatNumber(localSupply, { decimals: 0 })}
                                                                         </div>
-                                                                  </div>
-                                                            </td>
+                                                                        <div className="text-[9px] text-slate-600">units</div>
+                                                                  </td>
 
-                                                            {/* Local Quality */}
-                                                            <td className="px-4 py-4 text-center">
-                                                                  <span className="text-slate-500 font-mono text-xs italic">1.00</span>
-                                                            </td>
+                                                                  {/* Global Market Supply */}
+                                                                  <td className="px-4 py-4 text-center">
+                                                                        <div className="font-mono text-xs text-slate-400">
+                                                                              {formatNumber(globalSupply, { decimals: 0 })}
+                                                                        </div>
+                                                                        <div className="text-[9px] text-slate-600">units</div>
+                                                                  </td>
 
-                                                            {/* Global Quality */}
-                                                            <td className="px-4 py-4 text-center">
-                                                                  <span className="text-slate-500 font-mono text-xs italic">1.00</span>
-                                                            </td>
+                                                                  {/* Flow */}
+                                                                  <td className="px-4 py-4 text-center">
+                                                                        {(() => {
+                                                                              const diffusion = getDiffusionInfo(type);
+                                                                              const isToLocal = diffusion.direction === 'to-local';
+                                                                              const isToGlobal = diffusion.direction === 'to-global';
+                                                                              const flowColor = isToLocal ? 'text-emerald-500' : isToGlobal ? 'text-amber-500' : 'text-slate-600';
 
-                                                            {/* Local Market Supply */}
-                                                            <td className="px-4 py-4 text-center">
-                                                                  <div className="font-mono text-xs text-slate-300">
-                                                                        {formatNumber(localSupply, { decimals: 0 })}
-                                                                  </div>
-                                                                  <div className="text-[9px] text-slate-600">units</div>
-                                                            </td>
+                                                                              if (diffusion.direction === 'none') {
+                                                                                    return (
+                                                                                          <div className="inline-flex flex-col items-center text-slate-600">
+                                                                                                <Minus className="w-4 h-4" />
+                                                                                                <span className="text-[10px]">&plusmn;0</span>
+                                                                                          </div>
+                                                                                    );
+                                                                              }
 
-                                                            {/* Global Market Supply */}
-                                                            <td className="px-4 py-4 text-center">
-                                                                  <div className="font-mono text-xs text-slate-400">
-                                                                        {formatNumber(globalSupply, { decimals: 0 })}
-                                                                  </div>
-                                                                  <div className="text-[9px] text-slate-600">units</div>
-                                                            </td>
-
-                                                            {/* Flow */}
-                                                            <td className="px-4 py-4 text-center">
-                                                                  {(() => {
-                                                                        const diffusion = getDiffusionInfo(type);
-                                                                        const isToLocal = diffusion.direction === 'to-local';
-                                                                        const isToGlobal = diffusion.direction === 'to-global';
-                                                                        const flowColor = isToLocal ? 'text-emerald-500' : isToGlobal ? 'text-amber-500' : 'text-slate-600';
-
-                                                                        if (diffusion.direction === 'none') {
                                                                               return (
-                                                                                    <div className="inline-flex flex-col items-center text-slate-600">
-                                                                                          <Minus className="w-4 h-4" />
-                                                                                          <span className="text-[10px]">&plusmn;0</span>
+                                                                                    <div className={`inline-flex flex-col items-center ${flowColor}`}>
+                                                                                          {isToLocal ? (
+                                                                                                <MoveLeft className="w-4 h-4" />
+                                                                                          ) : (
+                                                                                                <MoveRight className="w-4 h-4" />
+                                                                                          )}
+                                                                                          <span className="text-[10px] font-mono font-medium">
+                                                                                                {formatNumber(Math.abs(diffusion.amount), { decimals: 0 })}/d
+                                                                                          </span>
                                                                                     </div>
                                                                               );
-                                                                        }
+                                                                        })()}
+                                                                  </td>
 
-                                                                        return (
-                                                                              <div className={`inline-flex flex-col items-center ${flowColor}`}>
-                                                                                    {isToLocal ? (
-                                                                                          <MoveLeft className="w-4 h-4" />
-                                                                                    ) : (
-                                                                                          <MoveRight className="w-4 h-4" />
-                                                                                    )}
-                                                                                    <span className="text-[10px] font-mono font-medium">
-                                                                                          {formatNumber(Math.abs(diffusion.amount), { decimals: 0 })}/d
-                                                                                    </span>
-                                                                              </div>
-                                                                        );
-                                                                  })()}
-                                                            </td>
-
-                                                            {/* Inventory */}
-                                                            <td className="px-4 py-4 text-right">
-                                                                  <div className="text-lg font-mono font-semibold text-emerald-400">
-                                                                        {formatNumber(amount, { decimals: 0 })}
-                                                                  </div>
-                                                            </td>
-
-                                                            {/* Slider Input */}
-                                                            <td className="px-4 py-4">
-                                                                  <div className="flex flex-col gap-1 items-center px-2">
-                                                                        <input
-                                                                              type="range"
-                                                                              min="1"
-                                                                              max={Math.max(100, amount)}
-                                                                              value={currentTradeAmount}
-                                                                              onChange={(e) => handleSliderChange(type, parseInt(e.target.value))}
-                                                                              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                                                                        />
-                                                                        <div className="flex justify-between w-full text-[10px] font-mono text-slate-500">
-                                                                              <span>1</span>
-                                                                              <span className="text-indigo-400 font-bold">{currentTradeAmount}</span>
-                                                                              <span>{Math.max(100, amount)}</span>
+                                                                  {/* Inventory */}
+                                                                  <td className="px-4 py-4 text-right">
+                                                                        <div className="text-lg font-mono font-semibold text-emerald-400">
+                                                                              {formatNumber(amount, { decimals: 0 })}
                                                                         </div>
-                                                                  </div>
-                                                            </td>
+                                                                  </td>
 
-                                                            {/* Actions */}
-                                                            <td className="px-4 py-4 text-right">
-                                                                  <div className="flex items-center justify-end gap-2">
-                                                                        {/* Buy Placeholder */}
-                                                                        <button
-                                                                              disabled
-                                                                              className="p-2 rounded-lg bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700"
-                                                                              title="Buy (Not implemented)"
-                                                                        >
-                                                                              <ShoppingCart className="w-4 h-4" />
-                                                                        </button>
+                                                                  {/* Slider Input */}
+                                                                  <td className="px-4 py-4">
+                                                                        <div className="flex flex-col gap-1 items-center px-2">
+                                                                              <input
+                                                                                    type="range"
+                                                                                    min="1"
+                                                                                    max={Math.max(100, amount)}
+                                                                                    value={currentTradeAmount}
+                                                                                    onChange={(e) => handleSliderChange(type, parseInt(e.target.value))}
+                                                                                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                                                              />
+                                                                              <div className="flex justify-between w-full text-[10px] font-mono text-slate-500">
+                                                                                    <span>1</span>
+                                                                                    <span className="text-indigo-400 font-bold">{currentTradeAmount}</span>
+                                                                                    <span>{Math.max(100, amount)}</span>
+                                                                              </div>
+                                                                        </div>
+                                                                  </td>
 
-                                                                        {/* Sell Button */}
-                                                                        <button
-                                                                              onClick={() => handleSellResource(type, currentTradeAmount)}
-                                                                              className="p-2 rounded-lg bg-indigo-600 text-white border border-indigo-500 hover:bg-indigo-500 transition-all active:scale-95 shadow-lg shadow-indigo-900/20"
-                                                                              title={`Sell ${currentTradeAmount}`}
-                                                                        >
-                                                                              <Coins className="w-4 h-4" />
-                                                                        </button>
-
-                                                                        {/* Autosell Toggle */}
-                                                                        <div className="flex flex-col items-center gap-1">
+                                                                  {/* Actions */}
+                                                                  <td className="px-4 py-4 text-right">
+                                                                        <div className="flex items-center justify-end gap-2">
+                                                                              {/* Buy Placeholder */}
                                                                               <button
-                                                                                    onClick={() => handleToggleAutosell(type, !autosell, currentTradeAmount)}
+                                                                                    disabled
+                                                                                    className="p-2 rounded-lg bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700 hover:bg-slate-700/50"
+                                                                                    title="Buy (Not implemented)"
+                                                                              >
+                                                                                    <ShoppingCart className="w-4 h-4" />
+                                                                              </button>
+
+                                                                              {/* Sell Button */}
+                                                                              <button
+                                                                                    onClick={() => handleSellResource(type, currentTradeAmount)}
+                                                                                    className="p-2 rounded-lg bg-indigo-600 text-white border border-indigo-500 hover:bg-indigo-500 transition-all active:scale-95 shadow-lg shadow-indigo-900/20"
+                                                                                    title={`Sell ${currentTradeAmount}`}
+                                                                              >
+                                                                                    <Coins className="w-4 h-4" />
+                                                                              </button>
+
+                                                                              {/* Autosell Toggle */}
+                                                                              <button
+                                                                                    onClick={() => handleToggleAutosell(type, !autosell)}
                                                                                     className={`p-2 rounded-lg border transition-all active:scale-95 ${autosell
                                                                                           ? 'bg-emerald-600 border-emerald-500 text-white active:bg-emerald-700'
                                                                                           : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
                                                                                           }`}
-                                                                                    title={autosell ? `Disable Auto-sell (Current setting: ${currentAutosellAmount})` : `Enable Auto-sell for ${currentTradeAmount} units`}
+                                                                                    title={autosell ? "Disable Auto-sell" : "Enable Auto-sell"}
                                                                               >
                                                                                     <Repeat className={`w-4 h-4 ${autosell ? 'animate-spin-slow' : ''}`} />
                                                                               </button>
+
+                                                                              {/* Config Toggle */}
+                                                                              <button
+                                                                                    onClick={() => setExpandedResource(expandedResource === type ? null : type)}
+                                                                                    className={`p-2 rounded-lg border transition-all active:scale-95 ${isExpanded
+                                                                                          ? 'bg-slate-700 border-slate-600 text-white'
+                                                                                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                                                                                          }`}
+                                                                                    title="Autosell Settings"
+                                                                              >
+                                                                                    <Settings className="w-4 h-4" />
+                                                                              </button>
                                                                         </div>
-                                                                  </div>
-                                                            </td>
-                                                      </tr>
+                                                                  </td>
+                                                            </tr>
+                                                            {isExpanded && (
+                                                                  <tr className="bg-slate-800/30 animate-in slide-in-from-top-2 duration-200">
+                                                                        <td colSpan={11} className="px-4 py-4 border-b border-slate-800/50 shadow-inner">
+                                                                              <div className="flex items-center gap-8 px-4">
+                                                                                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                                                                                          <Settings className="w-4 h-4" />
+                                                                                          <span className="font-semibold text-slate-300">Autosell Configuration</span>
+                                                                                    </div>
+
+                                                                                    <div className="flex items-center gap-4">
+                                                                                          <div className="flex flex-col gap-1">
+                                                                                                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Min Keep Amount</label>
+                                                                                                <div className="relative">
+                                                                                                      <input
+                                                                                                            type="number"
+                                                                                                            value={autoSellMinKeep}
+                                                                                                            onChange={(e) => handleUpdateAutosellConfig(type, 'keep', parseInt(e.target.value) || 0)}
+                                                                                                            className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-100 w-32 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                                                                      />
+                                                                                                      <div className="absolute right-2 top-1.5 text-xs text-slate-600 select-none">units</div>
+                                                                                                </div>
+                                                                                                <p className="text-[10px] text-slate-600">Keep at least this many</p>
+                                                                                          </div>
+
+                                                                                          <div className="flex flex-col gap-1">
+                                                                                                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Max Sell / Day</label>
+                                                                                                <div className="relative">
+                                                                                                      <input
+                                                                                                            type="number"
+                                                                                                            value={autoSellAmount}
+                                                                                                            onChange={(e) => handleUpdateAutosellConfig(type, 'sell', parseInt(e.target.value) || 0)}
+                                                                                                            className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-100 w-32 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                                                                      />
+                                                                                                      <div className="absolute right-2 top-1.5 text-xs text-slate-600 select-none">/day</div>
+                                                                                                </div>
+                                                                                                <p className="text-[10px] text-slate-600">Max to sell per tick</p>
+                                                                                          </div>
+                                                                                    </div>
+
+                                                                                    <div className="flex-1 text-right text-xs text-slate-500 italic">
+                                                                                          Changes apply immediately on next tick.
+                                                                                    </div>
+                                                                              </div>
+                                                                        </td>
+                                                                  </tr>
+                                                            )}
+                                                      </React.Fragment>
                                                 );
                                           })}
+
                                     </tbody>
                               </table>
                         </div>

@@ -3,7 +3,7 @@ import { runTickHooks } from '../../hooks/gametickHook';
 import { advanceProduction } from '../Building';
 import { Inventory } from '../inventory';
 import { autoSellResource } from '../market/market';
-import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch } from './gameState';
+import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch, getAutoSellMinKeep } from './gameState';
 import { ResourceType } from '../../utils/types';
 import { achievementService } from '../../achievements/achievementService';
 import { processMarketDiffusion } from '../market/marketDiffusion';
@@ -31,7 +31,7 @@ export function tick(inventory?: Inventory) {
     if (inventory) {
         for (const resourceType of Object.values(ResourceType)) {
             if (isAutoSellEnabled(resourceType)) {
-                autoSellResource(inventory, resourceType, 0, getAutoSellAmount(resourceType));
+                autoSellResource(inventory, resourceType, getAutoSellMinKeep(resourceType), getAutoSellAmount(resourceType));
             }
         }
     }
