@@ -1,4 +1,4 @@
-import { Inventory } from '../inventory';
+import type { Inventory } from '../inventory';
 import { Resource } from '../resources/resource';
 import { ResourceType } from '../../utils/types';
 import { resources } from '../resources/resourcesRegistry';
@@ -6,9 +6,18 @@ import { formatCurrency } from '../../utils/utils';
 import { addToBalance } from '../game/gameState';
 
 const transactionLog: { amount: number; description: string; newBalance: number; timestamp: number }[] = [];
+
 const marketSupply: Record<ResourceType, number> = Object.values(ResourceType).reduce(
   (acc, type) => {
     acc[type] = resources[type].localinitsupply;
+    return acc;
+  },
+  {} as Record<ResourceType, number>
+);
+
+const localMarketQuality: Record<ResourceType, number> = Object.values(ResourceType).reduce(
+  (acc, type) => {
+    acc[type] = 1.0;
     return acc;
   },
   {} as Record<ResourceType, number>
@@ -22,12 +31,44 @@ const globalMarketSupply: Record<ResourceType, number> = Object.values(ResourceT
   {} as Record<ResourceType, number>
 );
 
+const globalMarketQuality: Record<ResourceType, number> = Object.values(ResourceType).reduce(
+  (acc, type) => {
+    acc[type] = 1.0;
+    return acc;
+  },
+  {} as Record<ResourceType, number>
+);
+
+export function mixQuality(
+  existingQuantity: number,
+  existingQuality: number,
+  addedQuantity: number,
+  addedQuality: number
+): number {
+  if (existingQuantity + addedQuantity <= 0) {
+    return 1.0;
+  }
+
+  const totalWeight = existingQuantity + addedQuantity;
+  const weightedQuality = (existingQuantity * existingQuality + addedQuantity * addedQuality) / totalWeight;
+
+  return weightedQuality;
+}
+
 export function getLocalMarketSupply(resourceType: ResourceType): number {
   return marketSupply[resourceType];
 }
 
 export function getGlobalMarketSupply(resourceType: ResourceType): number {
   return globalMarketSupply[resourceType];
+}
+
+export function getLocalMarketQuality(resourceType: ResourceType): number {
+  return localMarketQuality[resourceType] ?? 1.0;
+}
+
+export function getGlobalMarketQuality(resourceType: ResourceType): number {
+  return globalMarketQuality[resourceType] ?? 1.0;
 }
 
 // Keep getMarketSupply for backward compatibility, mapping to local
@@ -63,14 +104,29 @@ export function sellResource(
 ): boolean {
   if (amount <= 0) return false;
   if (!inventory.has(resourceType, amount)) return false;
+
   const resource: Resource = resources[resourceType];
   const currentMarketSupply = getLocalMarketSupply(resourceType);
-  const price = resource.getLocalPrice(currentMarketSupply);
+  const currentMarketQuality = getLocalMarketQuality(resourceType);
+
+  // Price depends on CURRENT market quality
+  const price = resource.getLocalPrice(currentMarketSupply, currentMarketQuality);
+
+  // Get quality of the resource being sold
+  const sellingQuality = inventory.getQuality(resourceType);
+
   if (!inventory.remove(resourceType, amount)) return false;
+
+  // Mix quality into the market
+  localMarketQuality[resourceType] = mixQuality(
+    currentMarketSupply,
+    currentMarketQuality,
+    amount,
+    sellingQuality
+  );
+
   marketSupply[resourceType] = currentMarketSupply + amount;
-  // For now, let's also add to global supply when selling locally? 
-  // No, let's keep them separate as per standard market mechanics usually.
-  // But maybe a small fraction diffuses? User didn't specify diffusion yet.
+
   const total = price * amount;
   transaction(total, `Sold ${amount} ${resourceType} for ${formatCurrency(total, { maxDecimals: 4, minDecimals: 0 })}`);
   return true;
@@ -107,18 +163,43 @@ export function autoSellAll(
 }
 
 export function resetEconomy(): void {
-  // Reset market supply
+  // Reset ONLY local market supply and quality
+  // Global market supply and quality are preserved as per requirements
   for (const type of Object.values(ResourceType)) {
     marketSupply[type] = resources[type].localinitsupply;
-    globalMarketSupply[type] = resources[type].globalinitsupply;
+    localMarketQuality[type] = 1.0;
   }
 }
 
-export function updateMarketSupplies(
-  resourceType: ResourceType,
-  localChange: number,
-  globalChange: number
-): void {
-  marketSupply[resourceType] = Math.max(0, marketSupply[resourceType] + localChange);
-  globalMarketSupply[resourceType] = Math.max(0, globalMarketSupply[resourceType] + globalChange);
+export function resetGlobalEconomy(): void {
+  for (const type of Object.values(ResourceType)) {
+    globalMarketSupply[type] = resources[type].globalinitsupply;
+    globalMarketQuality[type] = 1.0;
+  }
+}
+
+
+export function addToLocalMarket(resourceType: ResourceType, amount: number, quality: number = 1.0): void {
+  if (amount <= 0) return;
+  const currentSupply = getLocalMarketSupply(resourceType);
+  const currentQuality = getLocalMarketQuality(resourceType);
+  localMarketQuality[resourceType] = mixQuality(currentSupply, currentQuality, amount, quality);
+  marketSupply[resourceType] = currentSupply + amount;
+}
+
+export function removeFromLocalMarket(resourceType: ResourceType, amount: number): void {
+  marketSupply[resourceType] = Math.max(0, marketSupply[resourceType] - amount);
+}
+
+export function addToGlobalMarket(resourceType: ResourceType, amount: number, quality: number = 1.0): void {
+  if (amount <= 0) return;
+  const currentSupply = getGlobalMarketSupply(resourceType);
+  const currentQuality = getGlobalMarketQuality(resourceType);
+  globalMarketQuality[resourceType] = mixQuality(currentSupply, currentQuality, amount, quality);
+  globalMarketSupply[resourceType] = currentSupply + amount;
+}
+
+
+export function removeFromGlobalMarket(resourceType: ResourceType, amount: number): void {
+  globalMarketSupply[resourceType] = Math.max(0, globalMarketSupply[resourceType] - amount);
 }

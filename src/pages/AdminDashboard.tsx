@@ -4,6 +4,7 @@ import { getBalance, setBalance, getResearch, setResearch } from '../lib/game/ga
 import { formatCurrency } from '../utils/utils';
 import { ResourceType } from '../utils/types';
 import { Inventory } from '../lib/inventory';
+import { addToGlobalMarket, addToLocalMarket } from '../lib/market/market';
 
 interface AdminDashboardProps {
       refresh?: () => void;
@@ -19,6 +20,8 @@ export default function AdminDashboard({ refresh, inventoryRef }: AdminDashboard
 
       const [resType, setResType] = useState<ResourceType>(ResourceType.Wood);
       const [resAmount, setResAmount] = useState<string>('100');
+      const [resQuality, setResQuality] = useState<string>('1.0');
+      const [resTarget, setResTarget] = useState<'inventory' | 'local' | 'global'>('inventory');
 
       const handleSetBalance = () => {
             const amount = parseInt(balanceInput.replace(/,/g, ''), 10);
@@ -40,8 +43,16 @@ export default function AdminDashboard({ refresh, inventoryRef }: AdminDashboard
 
       const handleAddResource = () => {
             const amount = parseInt(resAmount, 10);
-            if (!isNaN(amount) && inventoryRef?.current) {
-                  inventoryRef.current.add(resType, amount);
+            const quality = parseFloat(resQuality);
+
+            if (!isNaN(amount) && !isNaN(quality)) {
+                  if (resTarget === 'inventory' && inventoryRef?.current) {
+                        inventoryRef.current.add(resType, amount, quality);
+                  } else if (resTarget === 'local') {
+                        addToLocalMarket(resType, amount, quality);
+                  } else if (resTarget === 'global') {
+                        addToGlobalMarket(resType, amount, quality);
+                  }
                   if (refresh) refresh();
             }
       };
@@ -140,32 +151,64 @@ export default function AdminDashboard({ refresh, inventoryRef }: AdminDashboard
                               </h2>
 
                               <div className="space-y-4">
-                                    <div className="space-y-2">
-                                          <label className="text-sm font-medium text-slate-300">Add Resource</label>
-                                          <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-2 gap-4">
+                                          <div className="space-y-1">
+                                                <label className="text-xs font-medium text-slate-400">Resource</label>
                                                 <select
                                                       value={resType}
                                                       onChange={(e) => setResType(e.target.value as ResourceType)}
-                                                      className="bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                      className="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
                                                 >
                                                       {Object.values(ResourceType).map(type => (
                                                             <option key={type} value={type}>{type}</option>
                                                       ))}
                                                 </select>
+                                          </div>
+                                          <div className="space-y-1">
+                                                <label className="text-xs font-medium text-slate-400">Target</label>
+                                                <select
+                                                      value={resTarget}
+                                                      onChange={(e) => setResTarget(e.target.value as 'inventory' | 'local' | 'global')}
+                                                      className="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                >
+                                                      <option value="inventory">Player Inventory</option>
+                                                      <option value="local">Local Market</option>
+                                                      <option value="global">Global Market</option>
+                                                </select>
+                                          </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                          <div className="space-y-1">
+                                                <label className="text-xs font-medium text-slate-400">Amount</label>
                                                 <input
                                                       type="number"
                                                       value={resAmount}
                                                       onChange={(e) => setResAmount(e.target.value)}
-                                                      className="bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                      className="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
                                                 />
                                           </div>
-                                          <button
-                                                onClick={handleAddResource}
-                                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-900/20 active:translate-y-0.5"
-                                          >
-                                                Add to Inventory
-                                          </button>
+                                          <div className="space-y-1">
+                                                <label className="text-xs font-medium text-slate-400">Quality</label>
+                                                <input
+                                                      type="number"
+                                                      step="0.1"
+                                                      value={resQuality}
+                                                      onChange={(e) => setResQuality(e.target.value)}
+                                                      className="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                                                />
+                                          </div>
                                     </div>
+
+                                    <button
+                                          onClick={handleAddResource}
+                                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-900/20 active:translate-y-0.5"
+                                    >
+                                          Grant Resources
+                                    </button>
+                                    <p className="text-[10px] text-slate-500 text-center italic">
+                                          * Uses mix quality logic: (Existing × Q + New × Q) / Total
+                                    </p>
                               </div>
                         </div>
                   </div>

@@ -32,8 +32,8 @@ export class Resource {
   }
 
   // Calculate current local price based on supply vs. local benchmark supply.
-  getLocalPrice(currentSupply: number = this.localinitsupply, modifiers: number[] = []): number {
-    let price = (this.localbenchmarksupply / Math.max(currentSupply, 1)) * this.priceModifier;
+  getLocalPrice(currentSupply: number = this.localinitsupply, quality: number = 1.0, modifiers: number[] = []): number {
+    let price = (this.localbenchmarksupply / Math.max(currentSupply, 1)) * this.priceModifier * quality;
     for (const mod of modifiers) {
       price *= mod;
     }
@@ -41,8 +41,8 @@ export class Resource {
   }
 
   // Calculate current global price based on supply vs. global benchmark supply.
-  getGlobalPrice(currentSupply: number = this.globalinitsupply, modifiers: number[] = []): number {
-    let price = (this.globalbenchmarksupply / Math.max(currentSupply, 1)) * this.priceModifier;
+  getGlobalPrice(currentSupply: number = this.globalinitsupply, quality: number = 1.0, modifiers: number[] = []): number {
+    let price = (this.globalbenchmarksupply / Math.max(currentSupply, 1)) * this.priceModifier * quality;
     for (const mod of modifiers) {
       price *= mod;
     }

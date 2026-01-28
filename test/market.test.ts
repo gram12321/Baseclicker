@@ -7,9 +7,16 @@ import {
       autoSellResource,
       autoSellAll,
       resetEconomy,
+      resetGlobalEconomy,
       getLocalMarketSupply,
       getGlobalMarketSupply,
-      updateMarketSupplies,
+      getLocalMarketQuality,
+      getGlobalMarketQuality,
+      addToLocalMarket,
+      removeFromLocalMarket,
+      addToGlobalMarket,
+      removeFromGlobalMarket,
+      mixQuality,
       getTransactionLog
 } from '../src/lib/market/market';
 import {
@@ -25,12 +32,32 @@ describe('Market System', () => {
       beforeEach(() => {
             resetGameState();
             resetEconomy();
+            resetGlobalEconomy();
             inventory = new Inventory();
             // Clear transaction log if possible? 
             // The current implementation doesn't expose a clear method for logs, 
             // but we can just ignore previous logs or verify length increase.
       });
 
+      describe('Quality Mixing (mixQuality)', () => {
+            it('should calculate correct weighted average quality', () => {
+                  // (100 * 1.0 + 100 * 2.0) / 200 = 1.5
+                  const result = mixQuality(100, 1.0, 100, 2.0);
+                  expect(result).toBe(1.5);
+            });
+
+            it('should handle zero quantities by returning base quality', () => {
+                  const result = mixQuality(0, 5.0, 0, 10.0);
+                  expect(result).toBe(1.0);
+            });
+
+            it('should handle adding quality to a pool', () => {
+                  // Existing: 50 at Q1.0. Adding: 150 at Q5.0.
+                  // (50 * 1 + 150 * 5) / 200 = (50 + 750) / 200 = 800 / 200 = 4.0
+                  const result = mixQuality(50, 1.0, 150, 5.0);
+                  expect(result).toBe(4.0);
+            });
+      });
       describe('Selling Resources', () => {
             it('should allow selling resources and update balance', () => {
                   const amount = 100;
@@ -61,6 +88,19 @@ describe('Market System', () => {
 
                   const newSupply = getLocalMarketSupply(ResourceType.Wood);
                   expect(newSupply).toBe(initialSupply + amount);
+            });
+
+            it('should mix inventory quality into local market quality during sale', () => {
+                  const amount = 1000;
+                  const inventoryQuality = 5.0;
+                  const initialSupply = getLocalMarketSupply(ResourceType.Wood);
+                  const initialMarketQuality = getLocalMarketQuality(ResourceType.Wood); // Should be 1.0
+
+                  inventory.add(ResourceType.Wood, amount, inventoryQuality);
+                  sellResource(inventory, ResourceType.Wood, amount);
+
+                  const expectedQuality = mixQuality(initialSupply, initialMarketQuality, amount, inventoryQuality);
+                  expect(getLocalMarketQuality(ResourceType.Wood)).toBeCloseTo(expectedQuality);
             });
 
             it('should log transactions', () => {
@@ -132,9 +172,8 @@ describe('Market System', () => {
                   // Make local supply huge (low price) relative to global
                   // Resource definition: Wood localinit: 10000, globalinit: 100000
 
-                  // We can use updateMarketSupplies to set state
-                  // Let's add 1,000,000 to local supply
-                  updateMarketSupplies(ResourceType.Wood, 1000000, 0);
+                  // Add resources to local supply to lower price (more supply = lower price)
+                  addToLocalMarket(ResourceType.Wood, 1000000, 1.0);
 
                   const diffusion = getDiffusionInfo(ResourceType.Wood);
 
@@ -149,7 +188,7 @@ describe('Market System', () => {
                   // Expect Flow: To Local (Import)
 
                   // Let's make global supply huge
-                  updateMarketSupplies(ResourceType.Wood, 0, 10000000);
+                  addToGlobalMarket(ResourceType.Wood, 10000000, 1.0);
 
                   // Reset local supply to something small (or keep default, just ensure gap)
                   // Default Wood: Local 10k, Global now 100k + 10m
@@ -165,7 +204,7 @@ describe('Market System', () => {
 
             it('should process diffusion and update supplies', () => {
                   // Setup: Global cheaper than Local -> Flow to Local
-                  updateMarketSupplies(ResourceType.Wood, 0, 500000);
+                  addToGlobalMarket(ResourceType.Wood, 500000, 1.0);
 
                   const beforeLocal = getLocalMarketSupply(ResourceType.Wood);
                   const beforeGlobal = getGlobalMarketSupply(ResourceType.Wood);
@@ -179,10 +218,23 @@ describe('Market System', () => {
                   expect(afterLocal).toBeGreaterThan(beforeLocal);
                   expect(afterGlobal).toBeLessThan(beforeGlobal);
 
-                  // Conservation of mass (unless there's efficiency loss, which isn't in current logic)
+                  // Conservation of mass
                   const localChange = afterLocal - beforeLocal;
                   const globalChange = beforeGlobal - afterGlobal;
                   expect(localChange).toBeCloseTo(globalChange, 5);
+            });
+
+            it('should mix quality when components diffuse', () => {
+                  // Setup: High quality global market (Q10.0), low local market (Q1.0 default)
+                  // Make global cheaper to force flow to local
+                  addToGlobalMarket(ResourceType.Wood, 1000000, 10.0);
+
+                  const beforeLocalQuality = getLocalMarketQuality(ResourceType.Wood);
+
+                  processMarketDiffusion();
+
+                  // Quality should have increased
+                  expect(getLocalMarketQuality(ResourceType.Wood)).toBeGreaterThan(beforeLocalQuality);
             });
 
             it('should have diffusion amount scaled by base supply', () => {
@@ -210,8 +262,8 @@ describe('Market System', () => {
                   // So set Global Supply = 20000. (Default is 100000, so we need to reduce it)
 
                   const currentGlobal = getGlobalMarketSupply(ResourceType.Wood);
-                  // currentGlobal is 100,000. We want 20,000. So subtract 80,000.
-                  updateMarketSupplies(ResourceType.Wood, 0, -80000);
+                  // currentGlobal is 100,000. We want 20,000. So remove 80,000.
+                  removeFromGlobalMarket(ResourceType.Wood, 80000);
 
                   // Verify setup
                   const lSupply = getLocalMarketSupply(ResourceType.Wood);

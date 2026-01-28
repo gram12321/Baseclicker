@@ -187,7 +187,10 @@ export class Building {
 
       // 2. Special case for instant recipes
       if (recipe.workamount === 0) {
-        inventory.add(recipe.outputResource, recipe.outputAmount);
+        // Quality Placeholder: For now, produce at base quality 1.0
+        // Future logic will calculate this based on input quality and building upgrades.
+        const outputQuality = 1.0;
+        inventory.add(recipe.outputResource, recipe.outputAmount, outputQuality);
         progress = 0;
         // Instant recipes run exactly once per tick
         break;
@@ -203,7 +206,9 @@ export class Building {
 
       // 4. Complete Cycle?
       if (progress >= recipe.workamount) {
-        inventory.add(recipe.outputResource, recipe.outputAmount);
+        // Quality Placeholder: For now, produce at base quality 1.0
+        const outputQuality = 1.0;
+        inventory.add(recipe.outputResource, recipe.outputAmount, outputQuality);
         progress = 0;
         // Only continue if we still have work to apply to the NEXT cycle.
         // This solves the 'double consume' bug because it prevents "priming" 

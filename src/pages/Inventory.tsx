@@ -5,7 +5,7 @@ import { resources } from '../lib/resources/resourcesRegistry';
 import { isAutoSellEnabled, setAutoSellEnabled, setAutoSellAmount, getAutoSellAmount, getAutoSellMinKeep, setAutoSellMinKeep } from '../lib/game/gameState';
 import { sellResource as sellResourceEconomy } from '../lib/market/market';
 import { Inventory } from '../lib/inventory';
-import { getLocalMarketSupply, getGlobalMarketSupply } from '../lib/market/market';
+import { getLocalMarketSupply, getGlobalMarketSupply, getLocalMarketQuality, getGlobalMarketQuality } from '../lib/market/market';
 import { getDiffusionInfo } from '../lib/market/marketDiffusion';
 import { formatCurrency, formatNumber } from '../utils/utils';
 import { getResourceIcon } from '../utils/resourceIcons';
@@ -112,8 +112,11 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                 const amount = inventoryRef.current.getAmount(type);
                                                 const localSupply = getLocalMarketSupply(type);
                                                 const globalSupply = getGlobalMarketSupply(type);
-                                                const localPrice = resource.getLocalPrice(localSupply);
-                                                const globalPrice = resource.getGlobalPrice(globalSupply);
+                                                const localMarketQuality = getLocalMarketQuality(type);
+                                                const globalMarketQuality = getGlobalMarketQuality(type);
+                                                const inventoryQuality = inventoryRef.current.getQuality(type);
+                                                const localPrice = resource.getLocalPrice(localSupply, localMarketQuality);
+                                                const globalPrice = resource.getGlobalPrice(globalSupply, globalMarketQuality);
                                                 const autosell = isAutoSellEnabled(type);
                                                 const currentTradeAmount = tradeAmounts[type] || 1;
                                                 const autoSellAmount = getAutoSellAmount(type);
@@ -185,12 +188,12 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
 
                                                                   {/* Local Quality */}
                                                                   <td className="px-4 py-4 text-center">
-                                                                        <span className="text-slate-500 font-mono text-xs italic">1.00</span>
+                                                                        <span className="text-slate-500 font-mono text-xs italic">{formatNumber(localMarketQuality, { decimals: 2, forceDecimals: true })}</span>
                                                                   </td>
 
                                                                   {/* Global Quality */}
                                                                   <td className="px-4 py-4 text-center">
-                                                                        <span className="text-slate-500 font-mono text-xs italic">1.00</span>
+                                                                        <span className="text-slate-500 font-mono text-xs italic">{formatNumber(globalMarketQuality, { decimals: 2, forceDecimals: true })}</span>
                                                                   </td>
 
                                                                   {/* Local Market Supply */}
@@ -245,6 +248,9 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                                   <td className="px-4 py-4 text-right">
                                                                         <div className="text-lg font-mono font-semibold text-emerald-400">
                                                                               {formatNumber(amount, { decimals: 0 })}
+                                                                        </div>
+                                                                        <div className="text-[10px] text-slate-500 font-mono italic">
+                                                                              Q: {formatNumber(inventoryQuality, { decimals: 2, forceDecimals: true })}
                                                                         </div>
                                                                   </td>
 

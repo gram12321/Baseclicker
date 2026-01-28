@@ -1,7 +1,17 @@
 
 import { ResourceType } from '../../utils/types';
 import { resources } from '../resources/resourcesRegistry';
-import { getLocalMarketSupply, getGlobalMarketSupply, updateMarketSupplies } from './market';
+import {
+      getLocalMarketSupply,
+      getGlobalMarketSupply,
+      getLocalMarketQuality,
+      getGlobalMarketQuality,
+      addToLocalMarket,
+      removeFromLocalMarket,
+      addToGlobalMarket,
+      removeFromGlobalMarket
+} from './market';
+import { mixQuality } from './market';
 
 export type DiffusionDirection = 'to-local' | 'to-global' | 'none';
 
@@ -20,9 +30,11 @@ function processDiffusionForResource(
       const resource = resources[resourceType];
       const currentLocalSupply = getLocalMarketSupply(resourceType);
       const currentGlobalSupply = getGlobalMarketSupply(resourceType);
+      const currentLocalQuality = getLocalMarketQuality(resourceType);
+      const currentGlobalQuality = getGlobalMarketQuality(resourceType);
 
-      const localPrice = resource.getLocalPrice(currentLocalSupply);
-      const globalPrice = resource.getGlobalPrice(currentGlobalSupply);
+      const localPrice = resource.getLocalPrice(currentLocalSupply, currentLocalQuality);
+      const globalPrice = resource.getGlobalPrice(currentGlobalSupply, currentGlobalQuality);
 
       const result: DiffusionInfo = {
             direction: 'none',
@@ -42,7 +54,6 @@ function processDiffusionForResource(
       let calculatedAmount = 0;
 
       // Base the diffusion amount on the initial local supply magnitude (stable baseline)
-      // This matches the old logic: (resource.initLocalSupply / 1000)
       const diffusionBase = resource.localinitsupply / 1000;
 
       if (localPrice > globalPrice) {
@@ -60,43 +71,16 @@ function processDiffusionForResource(
       result.amount = calculatedAmount;
 
       if (applyChanges && result.amount !== 0) {
-            let localChange = 0;
-            let globalChange = 0;
-
-            // Quality Placeholders
-            // const currentLocalQuality = 1.0; // Placeholder: resource.localMarketQuality
-            // const currentGlobalQuality = 1.0; // Placeholder: globalMarketData.globalMarketQuality
-
             if (result.direction === 'to-local') {
-                  // Resources flowing from global to local
-                  localChange = result.amount;
-                  globalChange = -result.amount;
-
-                  // Placeholder for Quality Mixing Logic:
-                  // newLocalQuality = mixQuality(
-                  //   currentLocalSupply, currentLocalQuality,
-                  //   result.amount, currentGlobalQuality
-                  // );
-                  // newGlobalQuality = currentGlobalQuality;
+                  // Resources flowing from global (source) to local (target)
+                  removeFromGlobalMarket(resourceType, result.amount);
+                  addToLocalMarket(resourceType, result.amount, currentGlobalQuality);
             } else {
-                  // Resources flowing from local to global (amount is negative)
+                  // Resources flowing from local (source) to global (target) (amount is negative)
                   const absAmount = Math.abs(result.amount);
-                  localChange = -absAmount;
-                  globalChange = absAmount;
-
-                  // Placeholder for Quality Mixing Logic:
-                  // newGlobalQuality = mixQuality(
-                  //   currentGlobalSupply, currentGlobalQuality,
-                  //   absAmount, currentLocalQuality
-                  // );
-                  // newLocalQuality = currentLocalQuality;
+                  removeFromLocalMarket(resourceType, absAmount);
+                  addToGlobalMarket(resourceType, absAmount, currentLocalQuality);
             }
-
-            // Apply changes
-            updateMarketSupplies(resourceType, localChange, globalChange);
-
-            // Update Quality (Placeholder)
-            // updateResourceQuality(resourceType, newLocalQuality, newGlobalQuality);
       }
 
       return result;

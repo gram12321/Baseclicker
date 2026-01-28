@@ -12,11 +12,11 @@ export function formatNumber(value: number, options?: {
   if (typeof value !== 'number' || isNaN(value)) {
     return options?.currency ? '€0' : '0';
   }
-  
-  const { 
-    decimals, 
-    forceDecimals = false, 
-    smartDecimals = false, 
+
+  const {
+    decimals,
+    forceDecimals = false,
+    smartDecimals = false,
     smartMaxDecimals = false,
     adaptiveNearOne = true,
     currency = false,
@@ -40,7 +40,7 @@ export function formatNumber(value: number, options?: {
   if (compact) {
     const absValue = Math.abs(value);
     const compactDecimals = decimals !== undefined ? decimals : 1;
-    
+
     let compactValue: string;
     if (absValue >= 1e12) {
       compactValue = (value / 1e12).toFixed(compactDecimals) + 'T';
@@ -53,10 +53,10 @@ export function formatNumber(value: number, options?: {
     } else {
       compactValue = value.toFixed(compactDecimals);
     }
-    
+
     return currency ? '€' + compactValue : compactValue;
   }
-  
+
   // Handle currency formatting (non-compact)
   if (currency) {
     const finalDecimals = decimals !== undefined ? decimals : 0;
@@ -67,7 +67,7 @@ export function formatNumber(value: number, options?: {
       maximumFractionDigits: finalDecimals
     }).format(value);
   }
-  
+
   // Regular number formatting (original logic)
   const effectiveDecimals = decimals ?? 2;
 
@@ -83,7 +83,7 @@ export function formatNumber(value: number, options?: {
       calculatedDecimals = 2;
     }
   }
-  
+
   // Dynamically increase precision when approaching 1.0
   if (adaptiveNearOne && value < 1 && value >= 0.95) {
     calculatedDecimals = Math.max(calculatedDecimals, 4);
@@ -91,27 +91,27 @@ export function formatNumber(value: number, options?: {
       calculatedDecimals = Math.max(calculatedDecimals, 5);
     }
   }
-  
+
   // For large numbers (>1000), don't show decimals unless forced
   if (Math.abs(value) >= 1000 && !forceDecimals && !smartDecimals) {
     return value.toLocaleString('de-DE', {
       maximumFractionDigits: 0
     });
   }
-  
+
   // For small whole numbers, don't show decimals unless forced
   if (Number.isInteger(value) && !forceDecimals && !smartDecimals) {
     return value.toLocaleString('de-DE', {
       maximumFractionDigits: 0
     });
   }
-  
+
   // Smart decimals mode: intelligent decimal display based on value magnitude
   if (smartDecimals) {
     if (value === 0) {
       return '0';
     }
-    
+
     if (decimals !== undefined) {
       const maxDecimals = Math.min(calculatedDecimals, 6);
       const formatted = value.toLocaleString('de-DE', {
@@ -120,7 +120,7 @@ export function formatNumber(value: number, options?: {
       });
       return formatted;
     }
-    
+
     if (Math.abs(value) >= 1) {
       const maxDecimals = Math.min(calculatedDecimals, 6);
       return value.toLocaleString('de-DE', {
@@ -128,7 +128,7 @@ export function formatNumber(value: number, options?: {
         maximumFractionDigits: maxDecimals
       });
     }
-    
+
     if (adaptiveNearOne && value >= 0.95) {
       let adaptiveDecimals = 4;
       if (value >= 0.98) {
@@ -139,19 +139,19 @@ export function formatNumber(value: number, options?: {
         maximumFractionDigits: adaptiveDecimals
       });
     }
-    
+
     const absValue = Math.abs(value);
     const log10 = Math.log10(absValue);
     const firstNonZeroPosition = Math.ceil(-log10);
     const totalDecimals = Math.min(firstNonZeroPosition + 1, 6);
     const finalDecimals = Math.max(totalDecimals, 2);
-    
+
     return value.toLocaleString('de-DE', {
       minimumFractionDigits: forceDecimals ? finalDecimals : 0,
       maximumFractionDigits: finalDecimals
     });
   }
-  
+
   // For decimals or when forced, show specified decimal places
   return value.toLocaleString('de-DE', {
     minimumFractionDigits: calculatedDecimals,
@@ -175,3 +175,4 @@ export function formatCurrency(
     smartDecimals: !forceDecimals && minDecimals === 0,
   })}`;
 }
+
