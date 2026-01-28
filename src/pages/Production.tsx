@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import { Resource } from '../resources/resource';
-import { ResourceType } from '../types';
+import { ResourceType, BuildingType } from '../types';
 import { resources } from '../resources/resourcesRegistry';
 import {
-      manageProduction,
-      upgradeProduction,
-      getProductionUpgradeCost,
-      buildProduction as buildProductionAction,
-      researchProduction,
-} from '../production';
+      builtBuildings,
+      upgradeBuilding,
+      getBuildingUpgradeCost,
+      buildFacility as buildFacilityAction,
+      researchRecipe,
+      getBuildingCount,
+      getBuildingLevel,
+      BUILDING_RECIPES,
+} from '../Building';
 import { tick, getGameday } from '../game/gametick';
 import { getBalance, getResearch } from '../gameState';
 import { formatCurrency } from '../utils';
 import { Inventory } from '../inventory';
-
-// Components
 import { ProductionCard } from '../components/production/ProductionCard';
 import { ResearchModal } from '../components/production/ResearchModal';
+import { BuildBuildingsModal } from '../components/production/BuildBuildingsModal';
 import { Button } from '../components/ui/button';
 
 const resourceEntries = Object.entries(resources) as [ResourceType, Resource][];
+const buildingTypes = Object.values(BuildingType);
 
 interface ProductionProps {
       inventoryRef: React.MutableRefObject<Inventory>;
@@ -29,6 +32,7 @@ interface ProductionProps {
 export default function Production({ inventoryRef, refresh }: ProductionProps) {
       const [errorMsg, setErrorMsg] = useState<string | null>(null);
       const [isResearchModalOpen, setIsResearchModalOpen] = useState(false);
+      const [isBuildModalOpen, setIsBuildModalOpen] = useState(false);
       const balance = getBalance();
       const research = getResearch();
       const gameDay = getGameday();
@@ -40,49 +44,56 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
 
 
 
-      const handleActivate = (type: ResourceType) => {
-            manageProduction(type, 'activate');
+      const handleActivate = (buildingType: BuildingType) => {
+            const building = builtBuildings.get(buildingType);
+            building?.activate();
             refresh();
       };
 
-      const handleDeactivate = (type: ResourceType) => {
-            manageProduction(type, 'deactivate');
+      const handleDeactivate = (buildingType: BuildingType) => {
+            const building = builtBuildings.get(buildingType);
+            building?.deactivate();
             refresh();
       };
 
-      const handleBuildProduction = (type: ResourceType) => {
-            if (buildProductionAction(type)) {
+      const handleBuildProduction = (buildingType: BuildingType) => {
+            if (buildFacilityAction(buildingType)) {
                   refresh();
             } else {
-                  showNotification(`Insufficient funds to build ${type} Factory`);
+                  const resource = BUILDING_RECIPES[buildingType]?.output;
+                  showNotification(`Insufficient funds to build ${resources[resource].name} Facility`);
             }
       };
 
-      const handleUpgradeProduction = (type: ResourceType) => {
-            if (upgradeProduction(type).success) {
+      const handleUpgradeProduction = (buildingType: BuildingType) => {
+            if (upgradeBuilding(buildingType).success) {
                   refresh();
             } else {
-                  showNotification(`Insufficient funds to upgrade ${type} Factory`);
+                  const resource = BUILDING_RECIPES[buildingType]?.output;
+                  showNotification(`Insufficient funds to upgrade ${resources[resource].name} Facility`);
             }
       };
 
       const handleResearch = (type: ResourceType) => {
-            if (researchProduction(type)) {
-                  showNotification(`Successfully researched ${type} Factory!`);
+            if (researchRecipe(type)) {
+                  showNotification(`Successfully researched ${resources[type].name} Recipe!`);
                   refresh();
             } else {
-                  showNotification(`Insufficient research points to research ${type} Factory`);
+                  showNotification(`Insufficient research points to research ${resources[type].name} Recipe`);
             }
       };
 
-      // Filter to only show researched facilities
-      const researchedFacilities = resourceEntries.filter(
-            ([_, resource]) => resource.productionResearched
+      // Filter to only show built facilities
+      const builtFacilities = buildingTypes.filter(bt => builtBuildings.has(bt));
+
+      // Check if there are any unresearched recipes
+      const hasUnresearchedRecipes = resourceEntries.some(
+            ([_, resource]) => !resource.recipeResearched
       );
 
-      // Check if there are any unresearched facilities
-      const hasUnresearchedFacilities = resourceEntries.some(
-            ([_, resource]) => !resource.productionResearched
+      // Check if there are any researched but not built facilities
+      const hasBuildableFacilities = buildingTypes.some(
+            bt => !builtBuildings.has(bt) && resources[BUILDING_RECIPES[bt]?.output]?.recipeResearched
       );
 
       return (
@@ -105,18 +116,26 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
                         availableResearch={research}
                   />
 
+                  {/* Build Buildings Modal */}
+                  <BuildBuildingsModal
+                        isOpen={isBuildModalOpen}
+                        onClose={() => setIsBuildModalOpen(false)}
+                        onBuild={handleBuildProduction}
+                        availableBalance={balance}
+                  />
+
                   <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg backdrop-blur-sm">
                         <div className="mb-6 flex items-center justify-between">
                               <div>
-                                    <h1 className="text-2xl font-bold text-slate-100">Production Facilities</h1>
+                                    <h1 className="text-2xl font-bold text-slate-100">Production</h1>
                                     <p className="text-sm text-slate-400 mt-1">Day {gameDay} • Balance: {formatCurrency(balance, { maxDecimals: 2, minDecimals: 2 })}</p>
                               </div>
                               <div className="flex gap-3">
-                                    {hasUnresearchedFacilities && (
+                                    {hasBuildableFacilities && (
                                           <Button
-                                                onClick={() => setIsResearchModalOpen(true)}
+                                                onClick={() => setIsBuildModalOpen(true)}
                                                 size="lg"
-                                                className="bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+                                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
                                           >
                                                 <svg
                                                       xmlns="http://www.w3.org/2000/svg"
@@ -130,18 +149,41 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
                                                       strokeLinejoin="round"
                                                       className="mr-2"
                                                 >
-                                                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                                      <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
+                                                      <circle cx="9" cy="9" r="2" />
+                                                      <circle cx="20" cy="16" r="2" />
                                                 </svg>
-                                                Research Facilities
+                                                Build Facilities
                                           </Button>
                                     )}
+                                    <Button
+                                          onClick={() => setIsResearchModalOpen(true)}
+                                          size="lg"
+                                          className="bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+                                    >
+                                          <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="18"
+                                                height="18"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="mr-2"
+                                          >
+                                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                          </svg>
+                                          Research Recipes
+                                    </Button>
                               </div>
                         </div>
 
                         <div className="space-y-4">
-                              {researchedFacilities.length === 0 ? (
+                              {builtFacilities.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-16 text-center">
-                                          <div className="rounded-full bg-blue-950/30 p-6 mb-4">
+                                          <div className="rounded-full bg-slate-950/30 p-6 mb-4">
                                                 <svg
                                                       xmlns="http://www.w3.org/2000/svg"
                                                       width="48"
@@ -152,18 +194,29 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
                                                       strokeWidth="2"
                                                       strokeLinecap="round"
                                                       strokeLinejoin="round"
-                                                      className="text-blue-500"
+                                                      className="text-slate-500"
                                                 >
-                                                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                                      <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
+                                                      <circle cx="9" cy="9" r="2" />
+                                                      <circle cx="20" cy="16" r="2" />
                                                 </svg>
                                           </div>
                                           <h3 className="text-xl font-semibold text-slate-100 mb-2">
-                                                No Facilities Researched Yet
+                                                No Facilities Built Yet
                                           </h3>
                                           <p className="text-slate-400 max-w-md mb-6">
-                                                Research production facilities to unlock them for building. Click the "Research Facilities" button to get started.
+                                                Research production recipes and build facilities to start generating resources. Click the buttons above to get started.
                                           </p>
-                                          {hasUnresearchedFacilities && (
+                                          <div className="flex gap-3">
+                                                {hasBuildableFacilities && (
+                                                      <Button
+                                                            onClick={() => setIsBuildModalOpen(true)}
+                                                            size="lg"
+                                                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                                                      >
+                                                            Open Construction Yard
+                                                      </Button>
+                                                )}
                                                 <Button
                                                       onClick={() => setIsResearchModalOpen(true)}
                                                       size="lg"
@@ -171,20 +224,22 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
                                                 >
                                                       Open Research Lab
                                                 </Button>
-                                          )}
+                                          </div>
                                     </div>
                               ) : (
-                                    researchedFacilities.map(([type, resource]) => (
+                                    builtFacilities.map(buildingType => (
                                           <ProductionCard
-                                                key={type}
-                                                type={type}
-                                                resource={resource}
-                                                isActive={manageProduction(type, 'isActive')}
+                                                key={buildingType}
+                                                buildingType={buildingType}
+                                                isBuilt={true}
+                                                isActive={builtBuildings.get(buildingType)?.isActive() ?? false}
                                                 onActivate={handleActivate}
                                                 onDeactivate={handleDeactivate}
-                                                onBuild={handleBuildProduction}
                                                 onUpgrade={handleUpgradeProduction}
-                                                upgradeCost={getProductionUpgradeCost(type)}
+                                                onBuild={handleBuildProduction}
+                                                upgradeCost={getBuildingUpgradeCost(buildingType)}
+                                                buildCost={0}
+                                                level={getBuildingLevel(buildingType)}
                                           />
                                     ))
                               )}

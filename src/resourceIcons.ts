@@ -5,6 +5,7 @@ export const RESOURCE_ICONS: Record<ResourceType, string> = {
       [ResourceType.Stone]: '🪨',
       [ResourceType.Iron]: '⛓️', // Changed from ⚙️/gear to match standard ⛓️/chains or similar metal icon often used for iron in these games
       [ResourceType.Grain]: '🌾',
+      [ResourceType.Sugar]: '🍬',
 };
 
 export function getResourceIcon(type: ResourceType): string {

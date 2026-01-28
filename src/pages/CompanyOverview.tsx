@@ -13,7 +13,7 @@ import { formatCurrency, formatNumber } from '../utils';
 import { Resource } from '../resources/resource';
 import { ResourceType } from '../types';
 import { resources } from '../resources/resourcesRegistry';
-import { manageProduction, getProductionCount, getProductionLevel } from '../production';
+import { builtBuildings, getBuildingCount, getBuildingLevel } from '../Building';
 import { StatCard } from '../components/dashboard/StatCard';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -64,8 +64,8 @@ export default function CompanyOverview({ inventoryRef, refresh }: CompanyOvervi
       };
 
       // Calculate production stats
-      const totalFacilities = resourceEntries.reduce((sum, [type]) => sum + getProductionCount(type), 0);
-      const activeFacilities = resourceEntries.filter(([type]) => manageProduction(type, 'isActive')).length;
+      const totalFacilities = builtBuildings.size;
+      const activeFacilities = Array.from(builtBuildings.values()).filter(building => building.isActive()).length;
 
       return (
             <div className="space-y-6">
@@ -152,37 +152,32 @@ export default function CompanyOverview({ inventoryRef, refresh }: CompanyOvervi
                         </CardHeader>
                         <CardContent>
                               <div className="space-y-3">
-                                    {resourceEntries
-                                          .filter(([_, resource]) => resource.productionResearched)
-                                          .map(([type, resource]) => {
-                                                const count = getProductionCount(type);
-                                                const level = getProductionLevel(type);
-                                                const isActive = manageProduction(type, 'isActive');
+                                    {Array.from(builtBuildings.entries()).map(([buildingType, building]) => {
+                                          const isActive = building.isActive();
+                                          const resource = building.currentRecipe ? resources[building.currentRecipe.outputResource] : null;
 
-                                                if (count === 0) return null;
-
-                                                return (
-                                                      <div
-                                                            key={type}
-                                                            className="flex items-center justify-between p-3 rounded-lg border border-slate-800 bg-slate-950/30"
-                                                      >
-                                                            <div className="flex items-center gap-3">
-                                                                  <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-600'}`} />
-                                                                  <div>
-                                                                        <div className="font-medium text-slate-100">{resource.name} Factory</div>
-                                                                        <div className="text-xs text-slate-500">
-                                                                              {count} {count === 1 ? 'facility' : 'facilities'} • Level {level}
-                                                                        </div>
-                                                                  </div>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                  <div className="text-sm font-medium text-slate-300">
-                                                                        {isActive ? 'Active' : 'Inactive'}
+                                          return (
+                                                <div
+                                                      key={buildingType}
+                                                      className="flex items-center justify-between p-3 rounded-lg border border-slate-800 bg-slate-950/30"
+                                                >
+                                                      <div className="flex items-center gap-3">
+                                                            <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-600'}`} />
+                                                            <div>
+                                                                  <div className="font-medium text-slate-100">{buildingType}</div>
+                                                                  <div className="text-xs text-slate-500">
+                                                                        Level {building.level} • {resource ? resource.name : 'No recipe'}
                                                                   </div>
                                                             </div>
                                                       </div>
-                                                );
-                                          })}
+                                                      <div className="text-right">
+                                                            <div className="text-sm font-medium text-slate-300">
+                                                                  {isActive ? 'Active' : 'Inactive'}
+                                                            </div>
+                                                      </div>
+                                                </div>
+                                          );
+                                    })}
                                     {totalFacilities === 0 && (
                                           <div className="text-center py-8 text-slate-500">
                                                 No production facilities built yet

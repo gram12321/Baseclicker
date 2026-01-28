@@ -1,6 +1,6 @@
 // Simple gametick system
 import { runTickHooks } from '../hooks/gametickHook';
-import { advanceProduction } from '../production';
+import { advanceProduction } from '../Building';
 import { Inventory } from '../inventory';
 import { autoSellResource } from '../economy';
 import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch } from '../gameState';

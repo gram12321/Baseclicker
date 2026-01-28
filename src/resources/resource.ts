@@ -8,12 +8,7 @@ export class Resource {
   localinitsupply: number;
   globalbenchmarksupply: number;
   globalinitsupply: number;
-  productionMultiplier: number;
-  productionUpgradeLevel: number;
-  productionStartCost: number;
-  productionResearchCost: number;
-  productionBuilt: boolean;
-  productionResearched: boolean;
+  recipeResearched: boolean;
   priceModifier: number;
   recipe: Recipe;
 
@@ -25,12 +20,7 @@ export class Resource {
     globalbenchmarksupply: number,
     globalinitsupply: number,
     recipe: Recipe,
-    productionMultiplier: number = 1,
-    productionUpgradeLevel: number = 0,
-    productionStartCost: number = 0,
-    productionResearchCost: number = 0,
-    productionBuilt: boolean = false,
-    productionResearched: boolean = false
+    recipeResearched: boolean = false
   ) {
     this.type = type;
     this.name = name;
@@ -38,12 +28,7 @@ export class Resource {
     this.localinitsupply = localinitsupply;
     this.globalbenchmarksupply = globalbenchmarksupply;
     this.globalinitsupply = globalinitsupply;
-    this.productionMultiplier = productionMultiplier;
-    this.productionUpgradeLevel = productionUpgradeLevel;
-    this.productionStartCost = productionStartCost;
-    this.productionResearchCost = productionResearchCost;
-    this.productionBuilt = productionBuilt;
-    this.productionResearched = productionResearched;
+    this.recipeResearched = recipeResearched;
     this.priceModifier = 1.0;
     // Ensure runtime progress field exists on the recipe for persistence
     if (recipe.workamountCompleted === undefined) {
@@ -53,10 +38,7 @@ export class Resource {
   }
 
   reset(): void {
-    this.productionMultiplier = 1;
-    this.productionUpgradeLevel = 0;
-    this.productionBuilt = false;
-    this.productionResearched = false;
+    this.recipeResearched = false;
     // Note: priceModifier is specifically NOT reset here as per requirements
     if (this.recipe) {
       this.recipe.active = false;

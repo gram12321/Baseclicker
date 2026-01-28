@@ -9,12 +9,18 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
+
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
 
     const inv = new Inventory();
 
-    // Ensure Wood is built so it can be activated
-    resources[ResourceType.Wood].productionBuilt = true;
+    // Research and build Wood production
+    researchProduction(ResourceType.Wood);
+    buildProduction(ResourceType.Wood);
     manageProduction(ResourceType.Wood, 'activate');
 
     advanceProduction(inv);
@@ -28,11 +34,17 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
+
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
 
     // Make Iron instantaneous (workamount = 0)
     resources[ResourceType.Iron].recipe.workamount = 0;
-    resources[ResourceType.Iron].productionBuilt = true;
+    researchProduction(ResourceType.Iron);
+    buildProduction(ResourceType.Iron);
     manageProduction(ResourceType.Iron, 'activate');
 
     const inv = new Inventory({ [ResourceType.Stone]: 2 });
@@ -47,11 +59,17 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
+
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
 
     // Ensure iron has workamount 1
     resources[ResourceType.Iron].recipe.workamount = 1;
-    resources[ResourceType.Iron].productionBuilt = true;
+    researchProduction(ResourceType.Iron);
+    buildProduction(ResourceType.Iron);
     // Seed partial progress so combined with baseProduction gives >=2
     resources[ResourceType.Iron].recipe.workamountCompleted = 0.5;
     manageProduction(ResourceType.Iron, 'activate');
@@ -72,10 +90,16 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
+
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
 
     resources[ResourceType.Iron].recipe.workamount = 1;
-    resources[ResourceType.Iron].productionBuilt = true;
+    researchProduction(ResourceType.Iron);
+    buildProduction(ResourceType.Iron);
     resources[ResourceType.Iron].recipe.workamountCompleted = 0.75;
     manageProduction(ResourceType.Iron, 'activate');
 
@@ -93,10 +117,16 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
+
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
 
     resources[ResourceType.Iron].recipe.workamount = 1;
-    resources[ResourceType.Iron].productionBuilt = true;
+    researchProduction(ResourceType.Iron);
+    buildProduction(ResourceType.Iron);
     resources[ResourceType.Iron].recipe.workamountCompleted = 1;
     manageProduction(ResourceType.Iron, 'activate');
 
@@ -114,10 +144,16 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
+
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
 
     resources[ResourceType.Iron].recipe.workamount = 1;
-    resources[ResourceType.Iron].productionBuilt = true;
+    researchProduction(ResourceType.Iron);
+    buildProduction(ResourceType.Iron);
     resources[ResourceType.Iron].recipe.workamountCompleted = 1;
     manageProduction(ResourceType.Iron, 'activate');
 
@@ -136,11 +172,17 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
+
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
 
     // Setup: partial progress so +1.6 yields exactly 2.0 -> two productions
     resources[ResourceType.Iron].recipe.workamount = 1;
-    resources[ResourceType.Iron].productionBuilt = true;
+    researchProduction(ResourceType.Iron);
+    buildProduction(ResourceType.Iron);
     resources[ResourceType.Iron].recipe.workamountCompleted = 0.4;
     manageProduction(ResourceType.Iron, 'activate');
 
@@ -166,11 +208,17 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
     const { setGlobalProductionMultiplier } = await import('../src/gameState');
 
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
+
     const inv = new Inventory();
-    resources[ResourceType.Wood].productionBuilt = true;
+    researchProduction(ResourceType.Wood);
+    buildProduction(ResourceType.Wood);
     manageProduction(ResourceType.Wood, 'activate');
 
     // Default multiplier is 1.0, so 1 tick = 1 wood
@@ -190,13 +238,19 @@ describe('Production', () => {
     const { Inventory } = await import('../src/inventory');
     const { resources } = await import('../src/resources/resourcesRegistry');
     const { ResourceType } = await import('../src/types');
-    const { advanceProduction, manageProduction } = await import('../src/production');
+    const { advanceProduction, manageProduction, researchProduction, buildProduction } = await import('../src/Building');
+    const { setBalance, setResearch } = await import('../src/gameState');
     const { setGlobalProductionMultiplier } = await import('../src/gameState');
+
+    // Set up initial game state
+    setBalance(1000);
+    setResearch(1000);
 
     const inv = new Inventory();
 
     // Grain has workamount 5
-    resources[ResourceType.Grain].productionBuilt = true;
+    researchProduction(ResourceType.Grain);
+    buildProduction(ResourceType.Grain);
     manageProduction(ResourceType.Grain, 'activate');
     resources[ResourceType.Grain].recipe.workamountCompleted = 0;
 

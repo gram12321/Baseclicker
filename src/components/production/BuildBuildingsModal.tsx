@@ -4,29 +4,31 @@ import { resources } from '../../resources/resourcesRegistry';
 import { formatNumber } from '../../utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { getBuildingCount, getBuildingCost } from '../../Building';
+import { getResourceIcon } from '../../resourceIcons';
 
-interface ResearchModalProps {
+interface BuildBuildingsModalProps {
       isOpen: boolean;
       onClose: () => void;
-      onResearch: (type: ResourceType) => void;
-      availableResearch: number;
+      onBuild: (type: ResourceType) => void;
+      availableBalance: number;
 }
 
-export const ResearchModal: React.FC<ResearchModalProps> = ({
+export const BuildBuildingsModal: React.FC<BuildBuildingsModalProps> = ({
       isOpen,
       onClose,
-      onResearch,
-      availableResearch,
+      onBuild,
+      availableBalance,
 }) => {
       if (!isOpen) return null;
 
       const resourceEntries = Object.entries(resources) as [ResourceType, Resource][];
 
-      // Show all recipes
-      const allRecipes = resourceEntries;
+      // Show all production facilities
+      const allFacilities = resourceEntries;
 
-      const handleResearch = (type: ResourceType) => {
-            onResearch(type);
+      const handleBuild = (type: ResourceType) => {
+            onBuild(type);
       };
 
       return (
@@ -36,16 +38,16 @@ export const ResearchModal: React.FC<ResearchModalProps> = ({
                         <div className="sticky top-0 z-10 border-b border-slate-800 bg-slate-900/95 backdrop-blur-sm px-6 py-4">
                               <div className="flex items-center justify-between">
                                     <div>
-                                          <h2 className="text-2xl font-bold text-slate-100">Research & Development</h2>
+                                          <h2 className="text-2xl font-bold text-slate-100">Construction Yard</h2>
                                           <p className="text-sm text-slate-400 mt-1">
-                                                Research production recipes to unlock building facilities
+                                                View all production facilities and build researched ones
                                           </p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                           <div className="text-right">
-                                                <div className="text-xs text-slate-400">Available Research</div>
-                                                <div className="text-xl font-bold text-blue-400">
-                                                      {formatNumber(availableResearch, { compact: true })} RP
+                                                <div className="text-xs text-slate-400">Available Funds</div>
+                                                <div className="text-xl font-bold text-emerald-400">
+                                                      ${formatNumber(availableBalance, { compact: true })}
                                                 </div>
                                           </div>
                                           <Button
@@ -62,13 +64,13 @@ export const ResearchModal: React.FC<ResearchModalProps> = ({
                         {/* Content */}
                         <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {allRecipes.map(([type, resource]) => (
-                                          <ResearchCard
+                                    {allFacilities.map(([type, resource]) => (
+                                          <BuildCard
                                                 key={type}
                                                 type={type}
                                                 resource={resource}
-                                                availableResearch={availableResearch}
-                                                onResearch={handleResearch}
+                                                availableBalance={availableBalance}
+                                                onBuild={handleBuild}
                                           />
                                     ))}
                               </div>
@@ -78,52 +80,44 @@ export const ResearchModal: React.FC<ResearchModalProps> = ({
       );
 };
 
-interface ResearchCardProps {
+interface BuildCardProps {
       type: ResourceType;
       resource: Resource;
-      availableResearch: number;
-      onResearch: (type: ResourceType) => void;
+      availableBalance: number;
+      onBuild: (type: ResourceType) => void;
 }
 
-const ResearchCard: React.FC<ResearchCardProps> = ({
+const BuildCard: React.FC<BuildCardProps> = ({
       type,
       resource,
-      availableResearch,
-      onResearch,
+      availableBalance,
+      onBuild,
 }) => {
+      const canAfford = availableBalance >= getBuildingCost(type);
+      const isBuilt = getBuildingCount(type) > 0;
       const isResearched = resource.recipeResearched;
-      const canAfford = !isResearched && availableResearch >= resource.recipe.researchCost;
 
       return (
-            <Card className={`border-slate-800 backdrop-blur-sm transition-all duration-200 ${
-                  isResearched
-                        ? 'bg-emerald-950/20 border-emerald-500/30'
-                        : 'bg-slate-950/60 hover:border-blue-500/30'
-            }`}>
+            <Card className="border-slate-800 bg-slate-950/60 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-200">
                   <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                               <div>
-                                    <CardTitle className={`text-lg ${isResearched ? 'text-emerald-100' : 'text-slate-100'}`}>
-                                          {resource.recipe.name}
-                                    </CardTitle>
-                                    <CardDescription className={`text-xs mt-1 ${isResearched ? 'text-emerald-400' : 'text-slate-400'}`}>
-                                          {isResearched ? 'Researched' : 'Production Recipe'}
+                                    <CardTitle className="text-slate-100 text-lg">{resource.name}</CardTitle>
+                                    <CardDescription className="text-slate-400 text-xs mt-1">
+                                          Production Facility
                                     </CardDescription>
                               </div>
-                              <div className={`rounded-full px-3 py-1 text-xs font-medium border ${
-                                    isResearched
-                                          ? 'bg-emerald-950/50 text-emerald-400 border-emerald-500/20'
-                                          : 'bg-blue-950/50 text-blue-400 border-blue-500/20'
-                              }`}>
-                                    {isResearched ? '✓' : `${resource.recipe.researchCost} RP`}
+                              <div className="rounded-full bg-emerald-950/50 px-3 py-1 text-xs font-medium text-emerald-400 border border-emerald-500/20">
+                                    ${getBuildingCost(type)}
                               </div>
                         </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                         {/* Recipe Information */}
                         <div>
-                              <div className="text-xs font-medium text-slate-400 mb-2">Production Recipe</div>
+                              <div className="text-xs font-medium text-slate-400 mb-2">Available Recipes</div>
                               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                                    <div className="text-sm text-slate-300 font-medium mb-2">{resource.recipe.name}</div>
                                     {resource.recipe.inputs.length === 0 ? (
                                           <div className="text-sm text-slate-500 italic">
                                                 Base resource - No inputs required
@@ -133,34 +127,37 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
                                                 <div className="text-xs text-slate-500 mb-1">Requires:</div>
                                                 {resource.recipe.inputs.map((input, idx) => (
                                                       <div key={idx} className="flex justify-between text-sm">
-                                                            <span className="text-slate-400">{input.resource}</span>
+                                                            <span className="text-slate-400">{getResourceIcon(input.resource as ResourceType)} {input.resource}</span>
                                                             <span className="text-slate-300 font-medium">{input.amount}x</span>
                                                       </div>
                                                 ))}
                                           </div>
                                     )}
-                                    <div className="mt-2 pt-2 border-t border-slate-800 flex justify-between text-sm">
-                                          <span className="text-slate-400">Produces:</span>
-                                          <span className="text-emerald-400 font-medium">
-                                                {resource.recipe.outputAmount}x {resource.name}
-                                          </span>
+                                    <div className="mt-2 pt-2 border-t border-slate-800 space-y-1">
+                                          <div className="flex justify-between text-sm">
+                                                <span className="text-slate-400">Produces:</span>
+                                                <span className="text-emerald-400 font-medium">
+                                                      {resource.recipe.outputAmount}x {getResourceIcon(resource.recipe.outputResource)} {resource.recipe.outputResource}
+                                                </span>
+                                          </div>
+                                          <div className="flex justify-between text-sm">
+                                                <span className="text-slate-400">Work Required:</span>
+                                                <span className="text-slate-300 font-medium">{resource.recipe.workamount} ticks</span>
+                                          </div>
                                     </div>
                               </div>
                         </div>
 
-                        {/* Research Button */}
+                        {/* Build Button */}
                         <Button
-                              onClick={() => onResearch(type)}
-                              disabled={isResearched || !canAfford}
-                              className={`w-full ${
-                                    isResearched
-                                          ? 'bg-emerald-600 text-white cursor-not-allowed opacity-75'
-                                          : canAfford
-                                          ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                                          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                              }`}
+                              onClick={() => onBuild(type)}
+                              disabled={!canAfford || !isResearched || isBuilt}
+                              className={`w-full ${!canAfford || !isResearched || isBuilt
+                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                    }`}
                         >
-                              {isResearched ? (
+                              {isBuilt ? (
                                     <>
                                           <svg
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -176,9 +173,9 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
                                           >
                                                 <polyline points="20 6 9 17 4 12" />
                                           </svg>
-                                          Already Researched
+                                          Already Built
                                     </>
-                              ) : canAfford ? (
+                              ) : !isResearched ? (
                                     <>
                                           <svg
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -194,7 +191,27 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
                                           >
                                                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                           </svg>
-                                          Research Recipe
+                                          Research Recipe First
+                                    </>
+                              ) : canAfford ? (
+                                    <>
+                                          <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="16"
+                                                height="16"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="mr-2"
+                                          >
+                                                <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
+                                                <circle cx="9" cy="9" r="2" />
+                                                <circle cx="20" cy="16" r="2" />
+                                          </svg>
+                                          Build Facility
                                     </>
                               ) : (
                                     <>
@@ -213,7 +230,7 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
                                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                                                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                                           </svg>
-                                          Insufficient Research Points
+                                          Insufficient Funds
                                     </>
                               )}
                         </Button>

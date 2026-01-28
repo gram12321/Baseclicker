@@ -4,7 +4,6 @@ import { Resource } from './resources/resource';
 import { ResourceType } from './types';
 import { resources } from './resources/resourcesRegistry';
 import { formatCurrency } from './utils';
-
 import { addToBalance } from './gameState';
 
 const transactionLog: { amount: number; description: string; newBalance: number; timestamp: number }[] = [];
