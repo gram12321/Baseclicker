@@ -4,6 +4,8 @@ export enum ResourceType {
       Iron = 'Iron',
       Grain = 'Grain',
       Sugar = 'Sugar',
+      Bread = 'Bread',
+      Cake = 'Cake',
 }
 
 export enum BuildingType {
@@ -11,6 +13,7 @@ export enum BuildingType {
       Quarry = 'Quarry',
       Mine = 'Mine',
       Farm = 'Farm',
+      Bakery = 'Bakery',
 }
 
 export enum RecipeName {
@@ -19,6 +22,8 @@ export enum RecipeName {
       SmeltIron = 'Smelt Iron',
       GrowGrain = 'Grow Grain',
       GrowSugar = 'Grow Sugar',
+      BakeBread = 'Bake Bread',
+      BakeCake = 'Bake Cake',
 }
 
 export interface RecipeInput {

@@ -113,7 +113,6 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                                               </div>
                                                                               <div>
                                                                                     <div className="font-semibold text-slate-100">{resource.name}</div>
-                                                                                    <div className="text-[10px] text-slate-500 uppercase tracking-tighter">Tier 1</div>
                                                                               </div>
                                                                         </div>
                                                                   </td>

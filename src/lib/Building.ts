@@ -3,13 +3,7 @@ import { Inventory } from './inventory';
 import { getBalance, getGlobalProductionMultiplier } from './game/gameState';
 import { transaction } from './market/market';
 import { isRecipeNameResearched, resetResearch } from './research';
-import {
-  HarvestWood,
-  QuarryStone,
-  SmeltIron,
-  GrowGrain,
-  GrowSugar,
-  ALL_RECIPES
+import { HarvestWood, QuarryStone, SmeltIron, GrowGrain, GrowSugar, BakeBread, BakeCake,
 } from './recipes/recipes';
 
 const UPGRADE_COST_GROWTH = 1.5;
@@ -24,6 +18,7 @@ export const BUILDING_COSTS: Record<BuildingType, number> = {
   [BuildingType.Quarry]: 75,
   [BuildingType.Mine]: 150,
   [BuildingType.Farm]: 60,
+  [BuildingType.Bakery]: 300,
 };
 
 // Building display names
@@ -32,6 +27,7 @@ export const BUILDING_NAMES: Record<BuildingType, string> = {
   [BuildingType.Quarry]: 'Quarry',
   [BuildingType.Mine]: 'Mine',
   [BuildingType.Farm]: 'Farm',
+  [BuildingType.Bakery]: 'Bakery',
 };
 
 // Building recipes per building type
@@ -40,6 +36,7 @@ export const BUILDING_RECIPES: Record<BuildingType, Recipe[]> = {
   [BuildingType.Quarry]: [QuarryStone],
   [BuildingType.Mine]: [SmeltIron],
   [BuildingType.Farm]: [GrowGrain, GrowSugar],
+  [BuildingType.Bakery]: [BakeBread, BakeCake],
 };
 
 // Map of built buildings
@@ -65,8 +62,6 @@ export function advanceProduction(inventory: Inventory | null, baseProduction = 
     building.advance(inventory, baseProduction);
   }
 }
-
-
 
 export function buildFacility(buildingType: BuildingType): boolean {
   if (builtBuildings.has(buildingType)) return false; // Already built
@@ -106,7 +101,7 @@ export class Building {
     this.recipes = recipes.length > 0 ? recipes : [];
     this.currentRecipeIndex = this.recipes.length > 0 ? 0 : -1; // Default to first recipe if available
     this.productionMultiplier = 1;
-    this.productionUpgradeLevel = 0;
+    this.productionUpgradeLevel = 1;
     this.productionStartCost = productionStartCost;
   }
 
