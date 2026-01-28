@@ -6,11 +6,10 @@ import {
       builtBuildings,
       upgradeBuilding,
       buildFacility as buildFacilityAction,
-      researchRecipe,
       BUILDING_RECIPES,
       BUILDING_NAMES,
-      isRecipeResearched,
 } from '../Building';
+import { researchRecipe, isRecipeResearched } from '../research';
 import { tick, getGameday } from '../game/gametick';
 import { getBalance, getResearch } from '../gameState';
 import { ALL_RECIPES } from '../recipes/recipes';

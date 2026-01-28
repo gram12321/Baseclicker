@@ -6,7 +6,7 @@ import { formatNumber } from '../../utils/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { ALL_RECIPES } from '../../recipes/recipes';
-import { isRecipeResearched } from '../../Building';
+import { isRecipeResearched } from '../../research';
 
 interface ResearchModalProps {
       isOpen: boolean;

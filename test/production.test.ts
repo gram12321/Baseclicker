@@ -1,36 +1,67 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RecipeName } from '../src/utils/types';
+import type { RecipeName as RecipeNameEnum, ResourceType as ResourceTypeEnum, BuildingType as BuildingTypeEnum } from '../src/utils/types';
+import type { Inventory as InventoryType } from '../src/inventory';
+import type { advanceProduction as AdvanceProductionType, buildFacility as BuildFacilityType, builtBuildings as BuiltBuildingsType } from '../src/Building';
+import type { researchRecipe as ResearchRecipeType } from '../src/research';
+import type { setBalance as SetBalanceType, setResearch as SetResearchType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/gameState';
+import type { ALL_RECIPES as AllRecipesType } from '../src/recipes/recipes';
 
 describe('Production', () => {
+  let RecipeName: typeof RecipeNameEnum;
+  let ResourceType: typeof ResourceTypeEnum;
+  let BuildingType: typeof BuildingTypeEnum;
+  let Inventory: typeof InventoryType;
+  let advanceProduction: typeof AdvanceProductionType;
+  let buildFacility: typeof BuildFacilityType;
+  let builtBuildings: typeof BuiltBuildingsType;
+  let researchRecipe: typeof ResearchRecipeType;
+  let setBalance: typeof SetBalanceType;
+  let setResearch: typeof SetResearchType;
+  let setGlobalProductionMultiplier: typeof SetGlobalProductionMultiplierType;
+  let ALL_RECIPES: typeof AllRecipesType;
+
   beforeEach(async () => {
     await vi.resetModules();
+
+    // Re-import modules after reset
+    const typesModule = await import('../src/utils/types');
+    const inventoryModule = await import('../src/inventory');
+    const buildingModule = await import('../src/Building');
+    const researchModule = await import('../src/research');
+    const gameStateModule = await import('../src/gameState');
+    const recipesModule = await import('../src/recipes/recipes');
+
+    RecipeName = typesModule.RecipeName;
+    ResourceType = typesModule.ResourceType;
+    BuildingType = typesModule.BuildingType;
+    Inventory = inventoryModule.Inventory;
+    advanceProduction = buildingModule.advanceProduction;
+    buildFacility = buildingModule.buildFacility;
+    builtBuildings = buildingModule.builtBuildings;
+    researchRecipe = researchModule.researchRecipe;
+    setBalance = gameStateModule.setBalance;
+    setResearch = gameStateModule.setResearch;
+    setGlobalProductionMultiplier = gameStateModule.setGlobalProductionMultiplier;
+    ALL_RECIPES = recipesModule.ALL_RECIPES;
+
     // Reset recipe values that might be modified by tests
-    const { ALL_RECIPES } = await import('../src/recipes/recipes');
     ALL_RECIPES[RecipeName.SmeltIron].workamount = 2;
   });
 
   // Helper to set private recipe progress for testing
-  async function setBuildingProgress(buildingType: any, recipeName: RecipeName, progress: number) {
-    const { builtBuildings } = await import('../src/Building');
+  function setBuildingProgress(buildingType: any, recipeName: RecipeNameEnum, progress: number) {
     const building = builtBuildings.get(buildingType);
     if (building) {
       (building as any).recipeProgress.set(recipeName, progress);
     }
   }
 
-  async function getBuildingProgress(buildingType: any, recipeName: RecipeName) {
-    const { builtBuildings } = await import('../src/Building');
+  function getBuildingProgress(buildingType: any, recipeName: RecipeNameEnum) {
     const building = builtBuildings.get(buildingType);
     return building ? (building as any).recipeProgress.get(recipeName) || 0 : 0;
   }
 
-  it('only advances production on active recipes', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-
+  it('only advances production on active recipes', () => {
     // Set up initial game state
     setBalance(1000);
     setResearch(1000);
@@ -49,14 +80,7 @@ describe('Production', () => {
     expect(inv.getAmount(ResourceType.Iron)).toBe(0);
   });
 
-  it('workamount 0 requires inputs be present and consumes them before producing', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType, RecipeName } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-    const { ALL_RECIPES } = await import('../src/recipes/recipes');
-
+  it('workamount 0 requires inputs be present and consumes them before producing', () => {
     // Set up initial game state
     setBalance(1000);
     setResearch(1000);
@@ -75,14 +99,7 @@ describe('Production', () => {
     expect(inv.getAmount(ResourceType.Stone)).toBe(0);
   });
 
-  it('input is consumed for multiple productions when overflow restarts production', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType, RecipeName } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-    const { ALL_RECIPES } = await import('../src/recipes/recipes');
-
+  it('input is consumed for multiple productions when overflow restarts production', () => {
     setBalance(1000);
     setResearch(1000);
 
@@ -92,7 +109,7 @@ describe('Production', () => {
     buildFacility(BuildingType.Mine);
 
     // Seed partial progress
-    await setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 0.5);
+    setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 0.5);
     builtBuildings.get(BuildingType.Mine)?.activate();
 
     // Provide inputs for two productions (2 stone per iron -> need 4)
@@ -103,17 +120,10 @@ describe('Production', () => {
 
     expect(inv.getAmount(ResourceType.Iron)).toBe(2);
     expect(inv.getAmount(ResourceType.Stone)).toBe(0);
-    expect(await getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
+    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
   });
 
-  it('produces output and restarts when inputs available and workoverflow exists', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType, RecipeName } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-    const { ALL_RECIPES } = await import('../src/recipes/recipes');
-
+  it('produces output and restarts when inputs available and workoverflow exists', () => {
     setBalance(1000);
     setResearch(1000);
 
@@ -121,7 +131,7 @@ describe('Production', () => {
     researchRecipe(ResourceType.Iron);
     buildFacility(BuildingType.Mine);
 
-    await setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 0.75);
+    setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 0.75);
     builtBuildings.get(BuildingType.Mine)?.activate();
 
     const inv = new Inventory({ [ResourceType.Stone]: 4 });
@@ -131,17 +141,10 @@ describe('Production', () => {
 
     expect(inv.getAmount(ResourceType.Iron)).toBe(2);
     expect(inv.getAmount(ResourceType.Stone)).toBe(0);
-    expect(await getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0.25);
+    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0.25);
   });
 
-  it('edge case: workamountCompleted === workamount triggers a production', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType, RecipeName } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-    const { ALL_RECIPES } = await import('../src/recipes/recipes');
-
+  it('edge case: workamountCompleted === workamount triggers a production', () => {
     setBalance(1000);
     setResearch(1000);
 
@@ -149,7 +152,7 @@ describe('Production', () => {
     researchRecipe(ResourceType.Iron);
     buildFacility(BuildingType.Mine);
 
-    await setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 1);
+    setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 1);
     builtBuildings.get(BuildingType.Mine)?.activate();
 
     const inv = new Inventory({ [ResourceType.Stone]: 2 });
@@ -159,17 +162,10 @@ describe('Production', () => {
 
     expect(inv.getAmount(ResourceType.Iron)).toBe(1);
     expect(inv.getAmount(ResourceType.Stone)).toBe(0);
-    expect(await getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
+    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
   });
 
-  it('exact completion consumes inputs for one production and does not double-produce', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType, RecipeName } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-    const { ALL_RECIPES } = await import('../src/recipes/recipes');
-
+  it('exact completion consumes inputs for one production and does not double-produce', () => {
     setBalance(1000);
     setResearch(1000);
 
@@ -177,7 +173,7 @@ describe('Production', () => {
     researchRecipe(ResourceType.Iron);
     buildFacility(BuildingType.Mine);
 
-    await setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 1);
+    setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 1);
     builtBuildings.get(BuildingType.Mine)?.activate();
 
     const inv = new Inventory({ [ResourceType.Stone]: 4 });
@@ -186,17 +182,10 @@ describe('Production', () => {
 
     expect(inv.getAmount(ResourceType.Iron)).toBe(1);
     expect(inv.getAmount(ResourceType.Stone)).toBe(2);
-    expect(await getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
+    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
   });
 
-  it('overflow ends at 0 and restarts next tick consuming again', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType, RecipeName } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-    const { ALL_RECIPES } = await import('../src/recipes/recipes');
-
+  it('overflow ends at 0 and restarts next tick consuming again', () => {
     setBalance(1000);
     setResearch(1000);
 
@@ -204,7 +193,7 @@ describe('Production', () => {
     researchRecipe(ResourceType.Iron);
     buildFacility(BuildingType.Mine);
 
-    await setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 0.4);
+    setBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron, 0.4);
     builtBuildings.get(BuildingType.Mine)?.activate();
 
     const inv = new Inventory({ [ResourceType.Stone]: 6 });
@@ -214,24 +203,17 @@ describe('Production', () => {
 
     expect(inv.getAmount(ResourceType.Iron)).toBe(2);
     expect(inv.getAmount(ResourceType.Stone)).toBe(2);
-    expect(await getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
+    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
 
     // Next tick: add 1.0 -> progress 1.0 -> one production, consume remaining 2 stone
     advanceProduction(inv, 1.0);
 
     expect(inv.getAmount(ResourceType.Iron)).toBe(3);
     expect(inv.getAmount(ResourceType.Stone)).toBe(0);
-    expect(await getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
+    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0);
   });
 
-  it('global production multiplier scales production', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-    const { setGlobalProductionMultiplier } = await import('../src/gameState');
-
+  it('global production multiplier scales production', () => {
     setBalance(1000);
     setResearch(1000);
 
@@ -252,14 +234,7 @@ describe('Production', () => {
     setGlobalProductionMultiplier(1.0);
   });
 
-  it('global production multiplier affects partial progress on complex recipes', async () => {
-    const { Inventory } = await import('../src/inventory');
-    const { ResourceType, RecipeName } = await import('../src/utils/types');
-    const { advanceProduction, researchRecipe, buildFacility, builtBuildings } = await import('../src/Building');
-    const { BuildingType } = await import('../src/utils/types');
-    const { setBalance, setResearch } = await import('../src/gameState');
-    const { setGlobalProductionMultiplier } = await import('../src/gameState');
-
+  it('global production multiplier affects partial progress on complex recipes', () => {
     setBalance(1000);
     setResearch(1000);
 
@@ -271,18 +246,18 @@ describe('Production', () => {
     farmBuilding?.selectRecipe(0);
     farmBuilding?.activate();
 
-    await setBuildingProgress(BuildingType.Farm, RecipeName.GrowGrain, 0);
+    setBuildingProgress(BuildingType.Farm, RecipeName.GrowGrain, 0);
 
     // With 0.5x multiplier, adding 1 base work per tick results in 0.5 progress
     setGlobalProductionMultiplier(0.5);
     advanceProduction(inv, 1);
-    expect(await getBuildingProgress(BuildingType.Farm, RecipeName.GrowGrain)).toBe(0.5);
+    expect(getBuildingProgress(BuildingType.Farm, RecipeName.GrowGrain)).toBe(0.5);
     expect(inv.getAmount(ResourceType.Grain)).toBe(0);
 
     // With 10x multiplier, adding 1 base work results in 10 work -> 2 completions (workamount 5)
     setGlobalProductionMultiplier(10.0);
     advanceProduction(inv, 1);
     expect(inv.getAmount(ResourceType.Grain)).toBe(2);
-    expect(await getBuildingProgress(BuildingType.Farm, RecipeName.GrowGrain)).toBeCloseTo(0.5);
+    expect(getBuildingProgress(BuildingType.Farm, RecipeName.GrowGrain)).toBeCloseTo(0.5);
   });
 });

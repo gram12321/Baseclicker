@@ -1,29 +1,76 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { Inventory as InventoryType } from '../src/inventory';
+import type { ResourceType as ResourceTypeEnum, BuildingType as BuildingTypeEnum } from '../src/utils/types';
+import type { builtBuildings as BuiltBuildingsType, buildFacility as BuildFacilityType } from '../src/Building';
+import type { getBalance as GetBalanceType, setBalance as SetBalanceType, getResearch as GetResearchType, setResearch as SetResearchType, getResearchers as GetResearchersType, addResearchers as AddResearchersType, getGlobalProductionMultiplier as GetGlobalProductionMultiplierType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/gameState';
+import type { getGameday as GetGamedayType, tick as TickType } from '../src/game/gametick';
+import type { resetGame as ResetGameType } from '../src/game/gameControl';
+import type { transaction as TransactionType, getTransactionLog as GetTransactionLogType } from '../src/economy';
+import type { researchRecipe as ResearchRecipeType, isRecipeResearched as IsRecipeResearchedType, resetResearch as ResetResearchType, researchedRecipes as ResearchedRecipesType } from '../src/research';
 
 describe('Game Reset and Prestige', () => {
+      let Inventory: typeof InventoryType;
+      let ResourceType: typeof ResourceTypeEnum;
+      let BuildingType: typeof BuildingTypeEnum;
+      let builtBuildings: typeof BuiltBuildingsType;
+      let buildFacility: typeof BuildFacilityType;
+      let getBalance: typeof GetBalanceType;
+      let setBalance: typeof SetBalanceType;
+      let getResearch: typeof GetResearchType;
+      let setResearch: typeof SetResearchType;
+      let getResearchers: typeof GetResearchersType;
+      let addResearchers: typeof AddResearchersType;
+      let getGlobalProductionMultiplier: typeof GetGlobalProductionMultiplierType;
+      let setGlobalProductionMultiplier: typeof SetGlobalProductionMultiplierType;
+      let getGameday: typeof GetGamedayType;
+      let tick: typeof TickType;
+      let resetGame: typeof ResetGameType;
+      let transaction: typeof TransactionType;
+      let getTransactionLog: typeof GetTransactionLogType;
+      let researchRecipe: typeof ResearchRecipeType;
+      let isRecipeResearched: typeof IsRecipeResearchedType;
+      let resetResearch: typeof ResetResearchType;
+      let researchedRecipes: typeof ResearchedRecipesType;
+
       beforeEach(async () => {
             // Reset all modules to clear global state between tests
             await vi.resetModules();
+
+            // Re-import modules after reset
+            const inventoryModule = await import('../src/inventory');
+            const typesModule = await import('../src/utils/types');
+            const buildingModule = await import('../src/Building');
+            const gameStateModule = await import('../src/gameState');
+            const gametickModule = await import('../src/game/gametick');
+            const gameControlModule = await import('../src/game/gameControl');
+            const economyModule = await import('../src/economy');
+            const researchModule = await import('../src/research');
+
+            Inventory = inventoryModule.Inventory;
+            ResourceType = typesModule.ResourceType;
+            BuildingType = typesModule.BuildingType;
+            builtBuildings = buildingModule.builtBuildings;
+            buildFacility = buildingModule.buildFacility;
+            getBalance = gameStateModule.getBalance;
+            setBalance = gameStateModule.setBalance;
+            getResearch = gameStateModule.getResearch;
+            setResearch = gameStateModule.setResearch;
+            getResearchers = gameStateModule.getResearchers;
+            addResearchers = gameStateModule.addResearchers;
+            getGlobalProductionMultiplier = gameStateModule.getGlobalProductionMultiplier;
+            setGlobalProductionMultiplier = gameStateModule.setGlobalProductionMultiplier;
+            getGameday = gametickModule.getGameday;
+            tick = gametickModule.tick;
+            resetGame = gameControlModule.resetGame;
+            transaction = economyModule.transaction;
+            getTransactionLog = economyModule.getTransactionLog;
+            researchRecipe = researchModule.researchRecipe;
+            isRecipeResearched = researchModule.isRecipeResearched;
+            resetResearch = researchModule.resetResearch;
+            researchedRecipes = researchModule.researchedRecipes;
       });
 
-      it('resets progress but keeps researchers and calculates bonus', async () => {
-            const { Inventory } = await import('../src/inventory');
-            const { resources } = await import('../src/resources/resourcesRegistry');
-            const { ResourceType, BuildingType } = await import('../src/utils/types');
-            const { builtBuildings, buildFacility } = await import('../src/Building');
-            const {
-                  getBalance,
-                  setBalance,
-                  getResearch,
-                  setResearch,
-                  getResearchers,
-                  addResearchers,
-                  getGlobalProductionMultiplier,
-                  setGlobalProductionMultiplier
-            } = await import('../src/gameState');
-            const { getGameday, resetGameday, tick } = await import('../src/game/gametick');
-            const { resetGame } = await import('../src/game/gameControl');
-
+      it('resets progress but keeps researchers and calculates bonus', () => {
             const inv = new Inventory({ [ResourceType.Wood]: 100 });
 
             // Setup initial state
@@ -38,7 +85,6 @@ describe('Game Reset and Prestige', () => {
             if (forestry) {
                   forestry.productionUpgradeLevel = 5;
                   forestry.activate(); // Activates current recipe
-                  // (Removed invalid property assignment)
             }
 
             // Simulate some time
@@ -67,15 +113,9 @@ describe('Game Reset and Prestige', () => {
             expect(builtBuildings.has(BuildingType.Forestry)).toBe(false);
             // Since the building is gone, getting it should return undefined
             expect(builtBuildings.get(BuildingType.Forestry)).toBeUndefined();
-
-            // ... (removed invalid lines)
       });
 
-      it('accumulates multiplier bonus over multiple resets', async () => {
-            const { Inventory } = await import('../src/inventory');
-            const { setBalance, getGlobalProductionMultiplier } = await import('../src/gameState');
-            const { resetGame } = await import('../src/game/gameControl');
-
+      it('accumulates multiplier bonus over multiple resets', () => {
             const inv = new Inventory();
 
             // First reset: 2M balance -> +2.0 bonus
@@ -89,12 +129,7 @@ describe('Game Reset and Prestige', () => {
             expect(getGlobalProductionMultiplier()).toBe(6.0); // 3.0 + 3.0
       });
 
-      it('preserves transaction log and adds reset entry', async () => {
-            const { Inventory } = await import('../src/inventory');
-            const { transaction, getTransactionLog } = await import('../src/economy');
-            const { setBalance } = await import('../src/gameState');
-            const { resetGame } = await import('../src/game/gameControl');
-
+      it('preserves transaction log and adds reset entry', () => {
             const inv = new Inventory();
 
             transaction(100, "Initial sale");
@@ -107,5 +142,71 @@ describe('Game Reset and Prestige', () => {
             expect(log[0].description).toBe("Initial sale");
             expect(log[1].description).toContain("COMPANY RESET & LIQUIDATION");
             expect(log[1].description).toContain("1,0000"); // 1.0000 formatted
+      });
+
+      describe('Research reset behavior', () => {
+            it('clears all researched recipes on reset', () => {
+                  setResearch(100);
+
+                  // Research multiple recipes
+                  researchRecipe(ResourceType.Wood);
+                  researchRecipe(ResourceType.Stone);
+
+                  expect(researchedRecipes.size).toBe(2);
+
+                  // Reset research
+                  resetResearch();
+
+                  expect(researchedRecipes.size).toBe(0);
+                  expect(isRecipeResearched(ResourceType.Wood)).toBe(false);
+                  expect(isRecipeResearched(ResourceType.Stone)).toBe(false);
+            });
+
+            it('resets researched recipes during game reset', () => {
+                  setResearch(100);
+                  const inv = new Inventory();
+
+                  // Research recipes
+                  researchRecipe(ResourceType.Wood);
+                  researchRecipe(ResourceType.Stone);
+
+                  expect(isRecipeResearched(ResourceType.Wood)).toBe(true);
+                  expect(isRecipeResearched(ResourceType.Stone)).toBe(true);
+
+                  // Perform game reset
+                  resetGame(inv);
+
+                  // Researched recipes should be cleared
+                  expect(isRecipeResearched(ResourceType.Wood)).toBe(false);
+                  expect(isRecipeResearched(ResourceType.Stone)).toBe(false);
+                  expect(researchedRecipes.size).toBe(0);
+            });
+
+            it('does NOT reset researchers during game reset', () => {
+                  setResearch(100);
+                  addResearchers(5);
+                  const inv = new Inventory();
+
+                  expect(getResearchers()).toBe(5);
+
+                  // Perform game reset
+                  resetGame(inv);
+
+                  // Researchers should persist
+                  expect(getResearchers()).toBe(5);
+            });
+
+            it('resets research points during game reset', () => {
+                  setResearch(500);
+                  const inv = new Inventory();
+
+                  expect(getResearch()).toBe(500);
+
+                  // Perform game reset
+                  resetGame(inv);
+
+                  // Research points should be reset to 0
+                  expect(getResearch()).toBe(0);
+            });
       });
 });

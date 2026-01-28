@@ -1,7 +1,8 @@
 import { ResourceType, BuildingType, Recipe, RecipeName } from './utils/types';
 import { Inventory } from './inventory';
-import { getBalance, getResearch, addToResearch, getGlobalProductionMultiplier } from './gameState';
+import { getBalance, getGlobalProductionMultiplier } from './gameState';
 import { transaction } from './economy';
+import { researchedRecipes, isRecipeNameResearched, resetResearch } from './research';
 import {
   HarvestWood,
   QuarryStone,
@@ -15,8 +16,7 @@ const UPGRADE_COST_GROWTH = 1.5;
 const UPGRADE_BASE_MULTIPLIER_INCREASE = 0.2;
 const UPGRADE_DIMINISHING_FACTOR = 0.9;
 
-// Track researched recipes globally
-export const researchedRecipes: Set<RecipeName> = new Set();
+
 
 // Building costs per building type
 export const BUILDING_COSTS: Record<BuildingType, number> = {
@@ -50,7 +50,7 @@ export const builtBuildings: Map<BuildingType, Building> = new Map();
  */
 export function resetBuildings(): void {
   builtBuildings.clear();
-  researchedRecipes.clear();
+  resetResearch();
 }
 
 /**
@@ -66,27 +66,7 @@ export function advanceProduction(inventory: Inventory | null, baseProduction = 
   }
 }
 
-export function researchRecipe(resourceType: ResourceType): boolean {
-  const recipe = Object.values(ALL_RECIPES).find(r => r.outputResource === resourceType);
 
-  if (!recipe || researchedRecipes.has(recipe.name)) return false;
-
-  const researchCost = Math.max(0, recipe.researchCost);
-
-  if (getResearch() < researchCost) return false;
-
-  researchedRecipes.add(recipe.name);
-  if (researchCost > 0) {
-    addToResearch(-researchCost);
-  }
-  return true;
-}
-
-// Utility to check if a resource's recipe is researched
-export function isRecipeResearched(resourceType: ResourceType): boolean {
-  const recipe = Object.values(ALL_RECIPES).find(r => r.outputResource === resourceType);
-  return recipe ? researchedRecipes.has(recipe.name) : false;
-}
 
 export function buildFacility(buildingType: BuildingType): boolean {
   if (builtBuildings.has(buildingType)) return false; // Already built
@@ -143,7 +123,7 @@ export class Building {
 
     // Check if the recipe is researched before allowing selection
     const recipe = this.recipes[index];
-    if (!researchedRecipes.has(recipe.name)) return false;
+    if (!isRecipeNameResearched(recipe.name)) return false;
 
     this.currentRecipeIndex = index;
     return true;
@@ -152,6 +132,11 @@ export class Building {
   // Activate the building
   activate(): boolean {
     if (!this.hasRecipeSelected()) return false;
+
+    // Ensure selected recipe is researched
+    const recipe = this.currentRecipe;
+    if (recipe && !isRecipeNameResearched(recipe.name)) return false;
+
     this.isActiveFlag = true;
     return true;
   }
@@ -169,7 +154,11 @@ export class Building {
 
   // Set active state
   setActive(active: boolean): boolean {
-    if (!this.hasRecipeSelected() && active) return false;
+    if (active) {
+      if (!this.hasRecipeSelected()) return false;
+      const recipe = this.currentRecipe;
+      if (recipe && !isRecipeNameResearched(recipe.name)) return false;
+    }
     this.isActiveFlag = active;
     return true;
   }
