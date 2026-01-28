@@ -5,6 +5,7 @@ import { formatCurrency } from '../utils/utils';
 import { ResourceType } from '../utils/types';
 import { Inventory } from '../lib/inventory';
 import { addToGlobalMarket, addToLocalMarket } from '../lib/market/market';
+import { setTechLevel, getTechLevel } from '../lib/game/technology';
 
 interface AdminDashboardProps {
       refresh?: () => void;
@@ -22,6 +23,7 @@ export default function AdminDashboard({ refresh, inventoryRef }: AdminDashboard
       const [resAmount, setResAmount] = useState<string>('100');
       const [resQuality, setResQuality] = useState<string>('1.0');
       const [resTarget, setResTarget] = useState<'inventory' | 'local' | 'global'>('inventory');
+      const [techInput, setTechInput] = useState<string>('1');
 
       const handleSetBalance = () => {
             const amount = parseInt(balanceInput.replace(/,/g, ''), 10);
@@ -53,6 +55,14 @@ export default function AdminDashboard({ refresh, inventoryRef }: AdminDashboard
                   } else if (resTarget === 'global') {
                         addToGlobalMarket(resType, amount, quality);
                   }
+                  if (refresh) refresh();
+            }
+      };
+
+      const handleSetTech = () => {
+            const level = parseInt(techInput, 10);
+            if (!isNaN(level)) {
+                  setTechLevel(resType, level);
                   if (refresh) refresh();
             }
       };
@@ -209,6 +219,42 @@ export default function AdminDashboard({ refresh, inventoryRef }: AdminDashboard
                                     <p className="text-[10px] text-slate-500 text-center italic">
                                           * Uses mix quality logic: (Existing × Q + New × Q) / Total
                                     </p>
+                              </div>
+                        </div>
+
+                        {/* Technology Controls */}
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg backdrop-blur-sm">
+                              <h2 className="text-xl font-semibold text-slate-100 mb-4 flex items-center gap-2">
+                                    <span>🔬</span> Technology Management
+                              </h2>
+
+                              <div className="space-y-4">
+                                    <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800 flex justify-between items-center">
+                                          <div>
+                                                <span className="text-sm text-slate-400 block mb-1">{resType} Tech Level</span>
+                                                <span className="text-2xl font-mono text-blue-400">
+                                                      Lvl {getTechLevel(resType)}
+                                                </span>
+                                          </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                          <label className="text-sm font-medium text-slate-300">Set {resType} Tech</label>
+                                          <div className="flex gap-2">
+                                                <input
+                                                      type="number"
+                                                      value={techInput}
+                                                      onChange={(e) => setTechInput(e.target.value)}
+                                                      className="flex-1 bg-slate-950 border border-slate-700 text-slate-100 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                                <button
+                                                      onClick={handleSetTech}
+                                                      className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                                                >
+                                                      Set
+                                                </button>
+                                          </div>
+                                    </div>
                               </div>
                         </div>
                   </div>

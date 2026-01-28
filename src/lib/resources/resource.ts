@@ -9,6 +9,7 @@ export class Resource {
   globalbenchmarksupply: number;
   globalinitsupply: number;
   priceModifier: number;
+  technologyBaseCost: number;
 
   constructor(
     type: ResourceType,
@@ -25,6 +26,7 @@ export class Resource {
     this.globalbenchmarksupply = globalbenchmarksupply;
     this.globalinitsupply = globalinitsupply;
     this.priceModifier = 1.0;
+    this.technologyBaseCost = 5000;
   }
 
   reset(): void {

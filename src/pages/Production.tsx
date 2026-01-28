@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ResourceType, BuildingType } from '../utils/types';
 import { resources } from '../lib/resources/resourcesRegistry';
-import { builtBuildings, upgradeBuilding, buildFacility as buildFacilityAction, BUILDING_NAMES } from '../lib/Building';
+import { builtBuildings, upgradeBuilding, upgradeBuildingQuality, buildFacility as buildFacilityAction, BUILDING_NAMES } from '../lib/Building';
 import { researchRecipe, isRecipeResearched } from '../lib/research';
 import { getGameday } from '../lib/game/gametick';
 import { Inventory } from '../lib/inventory';
@@ -72,7 +72,16 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
                   refresh();
             } else {
                   const facilityName = BUILDING_NAMES[buildingType];
-                  showNotification(`Insufficient funds to upgrade ${facilityName}`);
+                  showNotification(`Insufficient funds to upgrade ${facilityName} speed`);
+            }
+      };
+
+      const handleUpgradeQuality = (buildingType: BuildingType) => {
+            if (upgradeBuildingQuality(buildingType).success) {
+                  refresh();
+            } else {
+                  const facilityName = BUILDING_NAMES[buildingType];
+                  showNotification(`Insufficient funds to upgrade ${facilityName} quality`);
             }
       };
 
@@ -205,7 +214,6 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
                                                                   <div>
                                                                         <h3 className="text-lg font-bold text-slate-100">{BUILDING_NAMES[buildingType]}</h3>
                                                                         <div className="flex items-center gap-2">
-                                                                              <div className="text-xs text-slate-500">Level {building.productionUpgradeLevel} • x{building.productionMultiplier.toFixed(2)}</div>
                                                                               {isActive && building.isStalled(inventoryRef.current) && (
                                                                                     <div className="flex items-center gap-1 text-[10px] text-amber-500 animate-pulse">
                                                                                           <AlertCircle className="w-3 h-3" />
@@ -214,14 +222,36 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
                                                                               )}
                                                                         </div>
                                                                   </div>
-                                                                  <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        className="border-slate-700 h-8 text-[10px]"
-                                                                        onClick={() => handleUpgradeProduction(buildingType)}
-                                                                  >
-                                                                        Upgrade (${formatNumber(building.getUpgradeCost(), { compact: true })})
-                                                                  </Button>
+                                                                  <div className="flex flex-col gap-2">
+                                                                        <Button
+                                                                              variant="outline"
+                                                                              size="sm"
+                                                                              className="border-slate-700 h-7 text-[9px] w-full"
+                                                                              onClick={() => handleUpgradeProduction(buildingType)}
+                                                                        >
+                                                                              Speed Lvl {building.productionUpgradeLevel} (${formatNumber(building.getUpgradeCost(), { compact: true })})
+                                                                        </Button>
+                                                                        <Button
+                                                                              variant="outline"
+                                                                              size="sm"
+                                                                              className="border-blue-900/50 hover:border-blue-500/50 h-7 text-[9px] text-blue-300 w-full"
+                                                                              onClick={() => handleUpgradeQuality(buildingType)}
+                                                                        >
+                                                                              Quality Lvl {building.qualityUpgradeLevel} (${formatNumber(building.getQualityUpgradeCost(), { compact: true })})
+                                                                        </Button>
+                                                                  </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-3 mb-4 text-[10px] bg-slate-950/40 p-2 rounded-lg border border-slate-800/50">
+                                                                  <div className="flex flex-col">
+                                                                        <span className="text-slate-500 uppercase tracking-tighter text-[8px] font-bold">Multiplier</span>
+                                                                        <span className="text-emerald-400 font-mono">x{building.productionMultiplier.toFixed(2)}</span>
+                                                                  </div>
+                                                                  <div className="w-px h-4 bg-slate-800" />
+                                                                  <div className="flex flex-col">
+                                                                        <span className="text-slate-500 uppercase tracking-tighter text-[8px] font-bold">Avg Quality</span>
+                                                                        <span className="text-blue-400 font-mono">Q{building.productionQuality.toFixed(2)}</span>
+                                                                  </div>
                                                             </div>
 
                                                             <div className="space-y-2 mb-6">

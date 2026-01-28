@@ -102,14 +102,15 @@ describe('Production', () => {
     builtBuildings.get(BuildingType.Mine)?.activate();
 
     // Tick 1: 1.5 work added.
-    // 1. Progress 0 -> Consume 1 set (Stone: 2).
-    // 2. Apply 1.0 work -> Progress 1.0 -> Add Iron, Progress 0. Remaining work 0.5.
-    // 3. Progress 0 -> Consume 1 set (Stone: 0).
-    // 4. Apply 0.5 work -> Progress 0.5. Remaining work 0.
+    // 1. Progress 0 -> Consume inputs for Cycle 1 (Stone: 4 → 2).
+    // 2. Apply 1.0 work -> Progress 100% -> Complete Cycle 1, produce Iron, progress = 0, remainingWork = 0.5
+    // 3. Continue loop (have overflow work)
+    // 4. Progress 0 -> Consume inputs for Cycle 2 (Stone: 2 → 0).
+    // 5. Apply 0.5 work -> Progress 50%. Done.
     advanceProduction(inv, 1.5);
 
     expect(inv.getAmount(ResourceType.Iron)).toBe(1);
-    expect(inv.getAmount(ResourceType.Stone)).toBe(0);
+    expect(inv.getAmount(ResourceType.Stone)).toBe(0); // Consumed for both cycle 1 AND cycle 2
     expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0.5);
   });
 

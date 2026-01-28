@@ -171,6 +171,13 @@ export function resetEconomy(): void {
   }
 }
 
+/**
+ * WARNING: THIS FUNCTION IS FOR TESTING PURPOSES ONLY!
+ * 
+ * The global economy state is persistent and should NOT be reset during normal gameplay.
+ * Using this in production code will destroy the shared global market state.
+ * Only use this in test suites (e.g. beforeEach blocks) to ensure isolation.
+ */
 export function resetGlobalEconomy(): void {
   for (const type of Object.values(ResourceType)) {
     globalMarketSupply[type] = resources[type].globalinitsupply;

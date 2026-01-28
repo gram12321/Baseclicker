@@ -9,6 +9,7 @@ import InventoryPage from './pages/Inventory';
 import CompanyOverview from './pages/CompanyOverview';
 import AdminDashboard from './pages/AdminDashboard';
 import Achievements from './pages/Achievements';
+import Technology from './pages/Technology';
 
 // Components
 import { Header } from './components/layout/Header';
@@ -25,6 +26,7 @@ function Navigation() {
     { path: '/inventory', label: 'Inventory', icon: '📦' },
     { path: '/finance', label: 'Finance', icon: '💰' },
     { path: '/achievements', label: 'Achievements', icon: '🏆' },
+    { path: '/technology', label: 'Technology', icon: '🔬' },
     { path: '/admin', label: 'Admin', icon: '⚙️' },
   ];
 
@@ -103,6 +105,10 @@ function AppContent() {
           <Route
             path="/achievements"
             element={<Achievements />}
+          />
+          <Route
+            path="/technology"
+            element={<Technology refresh={refresh} />}
           />
           <Route
             path="/admin"
