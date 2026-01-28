@@ -1,8 +1,8 @@
-import { ResourceType, BuildingType, Recipe, RecipeName } from './utils/types';
+import { BuildingType, Recipe, RecipeName } from '../utils/types';
 import { Inventory } from './inventory';
-import { getBalance, getGlobalProductionMultiplier } from './gameState';
+import { getBalance, getGlobalProductionMultiplier } from '../game/gameState';
 import { transaction } from './economy';
-import { researchedRecipes, isRecipeNameResearched, resetResearch } from './research';
+import { isRecipeNameResearched, resetResearch } from './research';
 import {
   HarvestWood,
   QuarryStone,
@@ -10,7 +10,7 @@ import {
   GrowGrain,
   GrowSugar,
   ALL_RECIPES
-} from './recipes/recipes';
+} from '../recipes/recipes';
 
 const UPGRADE_COST_GROWTH = 1.5;
 const UPGRADE_BASE_MULTIPLIER_INCREASE = 0.2;

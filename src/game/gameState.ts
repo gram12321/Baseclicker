@@ -1,4 +1,4 @@
-import { ResourceType, Player } from './utils/types';
+import { ResourceType, Player } from '../utils/types';
 
 // Global game state: player
 
@@ -94,4 +94,14 @@ export function resetGameState(): number {
 	}
 
 	return bonus;
+}
+
+export function hireResearcher(): boolean {
+	const cost = getResearcherCost();
+	if (player.balance >= cost) {
+		player.balance -= cost;
+		player.researchers += 1;
+		return true;
+	}
+	return false;
 }

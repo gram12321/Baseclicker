@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { Inventory as InventoryType } from '../src/inventory';
+import type { Inventory as InventoryType } from '../src/lib/inventory';
 import type { ResourceType as ResourceTypeEnum, BuildingType as BuildingTypeEnum } from '../src/utils/types';
-import type { builtBuildings as BuiltBuildingsType, buildFacility as BuildFacilityType } from '../src/Building';
-import type { getBalance as GetBalanceType, setBalance as SetBalanceType, getResearch as GetResearchType, setResearch as SetResearchType, getResearchers as GetResearchersType, addResearchers as AddResearchersType, getGlobalProductionMultiplier as GetGlobalProductionMultiplierType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/gameState';
+import type { builtBuildings as BuiltBuildingsType, buildFacility as BuildFacilityType } from '../src/lib/Building';
+import type { getBalance as GetBalanceType, setBalance as SetBalanceType, getResearch as GetResearchType, setResearch as SetResearchType, getResearchers as GetResearchersType, addResearchers as AddResearchersType, getGlobalProductionMultiplier as GetGlobalProductionMultiplierType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/game/gameState';
 import type { getGameday as GetGamedayType, tick as TickType } from '../src/game/gametick';
 import type { resetGame as ResetGameType } from '../src/game/gameControl';
-import type { transaction as TransactionType, getTransactionLog as GetTransactionLogType } from '../src/economy';
-import type { researchRecipe as ResearchRecipeType, isRecipeResearched as IsRecipeResearchedType, resetResearch as ResetResearchType, researchedRecipes as ResearchedRecipesType } from '../src/research';
+import type { transaction as TransactionType, getTransactionLog as GetTransactionLogType } from '../src/lib/economy';
+import type { researchRecipe as ResearchRecipeType, isRecipeResearched as IsRecipeResearchedType, resetResearch as ResetResearchType, researchedRecipes as ResearchedRecipesType } from '../src/lib/research';
 
 describe('Game Reset and Prestige', () => {
       let Inventory: typeof InventoryType;
@@ -37,14 +37,14 @@ describe('Game Reset and Prestige', () => {
             await vi.resetModules();
 
             // Re-import modules after reset
-            const inventoryModule = await import('../src/inventory');
+            const inventoryModule = await import('../src/lib/inventory');
             const typesModule = await import('../src/utils/types');
-            const buildingModule = await import('../src/Building');
-            const gameStateModule = await import('../src/gameState');
+            const buildingModule = await import('../src/lib/Building');
+            const gameStateModule = await import('../src/game/gameState');
             const gametickModule = await import('../src/game/gametick');
             const gameControlModule = await import('../src/game/gameControl');
-            const economyModule = await import('../src/economy');
-            const researchModule = await import('../src/research');
+            const economyModule = await import('../src/lib/economy');
+            const researchModule = await import('../src/lib/research');
 
             Inventory = inventoryModule.Inventory;
             ResourceType = typesModule.ResourceType;

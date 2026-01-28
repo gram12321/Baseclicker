@@ -4,21 +4,20 @@ import {
       getResearch,
       getResearchers,
       getResearcherCost,
-      addResearchers,
-      addToBalance,
+      hireResearcher,
       getGlobalProductionMultiplier,
-} from '../gameState';
+} from '../game/gameState';
 import { getGameday } from '../game/gametick';
 import { formatCurrency, formatNumber } from '../utils/utils';
 import { Resource } from '../resources/resource';
 import { ResourceType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
-import { builtBuildings } from '../Building';
+import { builtBuildings } from '../lib/Building';
 import { StatCard } from '../components/dashboard/StatCard';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { resetGame } from '../game/gameControl';
-import { Inventory } from '../inventory';
+import { Inventory } from '../lib/inventory';
 
 const resourceEntries = Object.entries(resources) as [ResourceType, Resource][];
 
@@ -43,12 +42,10 @@ export default function CompanyOverview({ inventoryRef, refresh }: CompanyOvervi
       };
 
       const handleHireResearcher = () => {
-            const cost = getResearcherCost();
-            if (balance >= cost) {
-                  addToBalance(-cost);
-                  addResearchers(1);
+            if (hireResearcher()) {
                   refresh();
             } else {
+                  const cost = getResearcherCost();
                   showNotification(`Insufficient funds to hire Researcher (Cost: ${formatCurrency(cost)})`);
             }
       };

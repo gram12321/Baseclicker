@@ -7,10 +7,10 @@ import {
       setAutoSellEnabled,
       setAutoSellAmount,
       getAutoSellAmount,
-} from '../gameState';
+} from '../game/gameState';
 import { getGameday } from '../game/gametick';
-import { sellResource as sellResourceEconomy } from '../economy';
-import { Inventory } from '../inventory';
+import { sellResource as sellResourceEconomy } from '../lib/economy';
+import { Inventory } from '../lib/inventory';
 
 // Components
 import { InventoryList } from '../components/inventory/InventoryList';

@@ -1,10 +1,10 @@
-import { resetGameState } from '../gameState';
+import { resetGameState } from './gameState';
 import { resetResources } from '../resources/resourcesRegistry';
-import { resetEconomy, transaction } from '../economy';
-import { Inventory } from '../inventory';
+import { resetEconomy, transaction } from '../lib/economy';
+import { Inventory } from '../lib/inventory';
 import { resetGameday } from './gametick';
 import { formatNumber } from '../utils/utils';
-import { resetBuildings } from '../Building';
+import { resetBuildings } from '../lib/Building';
 
 /**
  * Resets the entire game state to initial values.

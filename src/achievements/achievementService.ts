@@ -1,8 +1,8 @@
 
 import { ALL_ACHIEVEMENTS } from './constants';
 import { AchievementConfig, AchievementStatus } from './types';
-import { getBalance, getResearch, getResearchers, getGlobalProductionMultiplier } from '../gameState';
-import { Inventory } from '../inventory';
+import { getBalance, getResearch, getResearchers, getGlobalProductionMultiplier } from '../game/gameState';
+import { Inventory } from '../lib/inventory';
 import { ResourceType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
 

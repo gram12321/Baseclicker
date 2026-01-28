@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { RecipeName as RecipeNameEnum, ResourceType as ResourceTypeEnum, BuildingType as BuildingTypeEnum } from '../src/utils/types';
-import type { Inventory as InventoryType } from '../src/inventory';
-import type { advanceProduction as AdvanceProductionType, buildFacility as BuildFacilityType, builtBuildings as BuiltBuildingsType } from '../src/Building';
-import type { researchRecipe as ResearchRecipeType } from '../src/research';
-import type { setBalance as SetBalanceType, setResearch as SetResearchType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/gameState';
+import type { Inventory as InventoryType } from '../src/lib/inventory';
+import type { advanceProduction as AdvanceProductionType, buildFacility as BuildFacilityType, builtBuildings as BuiltBuildingsType } from '../src/lib/Building';
+import type { researchRecipe as ResearchRecipeType } from '../src/lib/research';
+import type { setBalance as SetBalanceType, setResearch as SetResearchType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/game/gameState';
 import type { ALL_RECIPES as AllRecipesType } from '../src/recipes/recipes';
 
 describe('Production', () => {
@@ -25,10 +25,10 @@ describe('Production', () => {
 
     // Re-import modules after reset
     const typesModule = await import('../src/utils/types');
-    const inventoryModule = await import('../src/inventory');
-    const buildingModule = await import('../src/Building');
-    const researchModule = await import('../src/research');
-    const gameStateModule = await import('../src/gameState');
+    const inventoryModule = await import('../src/lib/inventory');
+    const buildingModule = await import('../src/lib/Building');
+    const researchModule = await import('../src/lib/research');
+    const gameStateModule = await import('../src/game/gameState');
     const recipesModule = await import('../src/recipes/recipes');
 
     RecipeName = typesModule.RecipeName;

@@ -8,13 +8,13 @@ import {
       buildFacility as buildFacilityAction,
       BUILDING_RECIPES,
       BUILDING_NAMES,
-} from '../Building';
-import { researchRecipe, isRecipeResearched } from '../research';
+} from '../lib/Building';
+import { researchRecipe, isRecipeResearched } from '../lib/research';
 import { tick, getGameday } from '../game/gametick';
-import { getBalance, getResearch } from '../gameState';
+import { getBalance, getResearch } from '../game/gameState';
 import { ALL_RECIPES } from '../recipes/recipes';
 import { formatCurrency } from '../utils/utils';
-import { Inventory } from '../inventory';
+import { Inventory } from '../lib/inventory';
 import { ProductionCard } from '../components/production/ProductionCard';
 import { ResearchModal } from '../components/production/ResearchModal';
 import { BuildBuildingsModal } from '../components/production/BuildBuildingsModal';

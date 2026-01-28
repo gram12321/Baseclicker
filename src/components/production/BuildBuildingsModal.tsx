@@ -1,7 +1,7 @@
 import React from 'react';
 import { BuildingType } from '../../utils/types';
-import { BUILDING_RECIPES, BUILDING_COSTS, BUILDING_NAMES, builtBuildings } from '../../Building';
-import { isRecipeResearched } from '../../research';
+import { BUILDING_RECIPES, BUILDING_COSTS, BUILDING_NAMES, builtBuildings } from '../../lib/Building';
+import { isRecipeResearched } from '../../lib/research';
 import { formatNumber } from '../../utils/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';

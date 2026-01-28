@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Inventory } from './inventory';
+import { Inventory } from './lib/inventory';
 
 // Pages
 import Production from './pages/Production';
@@ -14,7 +14,7 @@ import Achievements from './pages/Achievements';
 import { Header } from './components/layout/Header';
 import { getGameday, tick } from './game/gametick';
 import { achievementService } from './achievements/achievementService';
-import { getBalance } from './gameState';
+import { getBalance } from './game/gameState';
 
 function Navigation() {
   const location = useLocation();
