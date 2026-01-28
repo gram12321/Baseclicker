@@ -13,7 +13,6 @@ export default function Finance() {
       const transactions = getTransactionLog();
 
       // Calculate some financial metrics
-      const recentTransactions = transactions.slice(0, 10);
       const totalRevenue = transactions
             .filter(t => t.amount > 0)
             .reduce((sum, t) => sum + t.amount, 0);

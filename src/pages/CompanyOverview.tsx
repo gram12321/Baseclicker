@@ -9,8 +9,6 @@ import {
 } from '../game/gameState';
 import { getGameday } from '../game/gametick';
 import { formatCurrency, formatNumber } from '../utils/utils';
-import { Resource } from '../resources/resource';
-import { ResourceType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
 import { builtBuildings } from '../lib/Building';
 import { StatCard } from '../components/dashboard/StatCard';
@@ -19,7 +17,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { resetGame } from '../game/gameControl';
 import { Inventory } from '../lib/inventory';
 
-const resourceEntries = Object.entries(resources) as [ResourceType, Resource][];
 
 interface CompanyOverviewProps {
       inventoryRef?: MutableRefObject<Inventory>;

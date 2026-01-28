@@ -1,34 +1,24 @@
 import { useState } from 'react';
-import { Resource } from '../resources/resource';
 import { ResourceType, BuildingType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
-import {
-      builtBuildings,
-      upgradeBuilding,
-      buildFacility as buildFacilityAction,
-      BUILDING_RECIPES,
-      BUILDING_NAMES,
-} from '../lib/Building';
+import { builtBuildings, upgradeBuilding, buildFacility as buildFacilityAction, BUILDING_NAMES } from '../lib/Building';
 import { researchRecipe, isRecipeResearched } from '../lib/research';
-import { tick, getGameday } from '../game/gametick';
+import { getGameday } from '../game/gametick';
 import { getBalance, getResearch } from '../game/gameState';
 import { ALL_RECIPES } from '../recipes/recipes';
 import { formatCurrency } from '../utils/utils';
-import { Inventory } from '../lib/inventory';
 import { ProductionCard } from '../components/production/ProductionCard';
 import { ResearchModal } from '../components/production/ResearchModal';
 import { BuildBuildingsModal } from '../components/production/BuildBuildingsModal';
 import { Button } from '../components/ui/button';
 
-const resourceEntries = Object.entries(resources) as [ResourceType, Resource][];
 const buildingTypes = Object.values(BuildingType);
 
 interface ProductionProps {
-      inventoryRef: React.MutableRefObject<Inventory>;
       refresh: () => void;
 }
 
-export default function Production({ inventoryRef, refresh }: ProductionProps) {
+export default function Production({ refresh }: ProductionProps) {
       const [errorMsg, setErrorMsg] = useState<string | null>(null);
       const [isResearchModalOpen, setIsResearchModalOpen] = useState(false);
       const [isBuildModalOpen, setIsBuildModalOpen] = useState(false);

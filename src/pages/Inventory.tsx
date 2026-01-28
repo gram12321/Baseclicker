@@ -1,14 +1,7 @@
-import { useState, useEffect } from 'react';
 import { Resource } from '../resources/resource';
 import { ResourceType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
-import {
-      isAutoSellEnabled,
-      setAutoSellEnabled,
-      setAutoSellAmount,
-      getAutoSellAmount,
-} from '../game/gameState';
-import { getGameday } from '../game/gametick';
+import { isAutoSellEnabled, setAutoSellEnabled, setAutoSellAmount, getAutoSellAmount } from '../game/gameState';
 import { sellResource as sellResourceEconomy } from '../lib/economy';
 import { Inventory } from '../lib/inventory';
 
@@ -24,7 +17,7 @@ interface InventoryPageProps {
 }
 
 export default function InventoryPage({ inventoryRef, refresh, refreshToken }: InventoryPageProps) {
-      const gameDay = getGameday();
+
 
       const handleSellResource = (type: ResourceType, amount: number) => {
             const success = sellResourceEconomy(inventoryRef.current, type, amount);

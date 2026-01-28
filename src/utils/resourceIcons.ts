@@ -3,7 +3,7 @@ import { ResourceType } from './types';
 export const RESOURCE_ICONS: Record<ResourceType, string> = {
       [ResourceType.Wood]: '🪵',
       [ResourceType.Stone]: '🪨',
-      [ResourceType.Iron]: '⛓️', // Changed from ⚙️/gear to match standard ⛓️/chains or similar metal icon often used for iron in these games
+      [ResourceType.Iron]: '⛓️',
       [ResourceType.Grain]: '🌾',
       [ResourceType.Sugar]: '🍬',
 };

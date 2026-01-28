@@ -2,16 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { achievementService } from '../achievements/achievementService';
 import { AchievementConfig, AchievementStatus, AchievementCategory } from '../achievements/types';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-
-const categoryIcons: Record<AchievementCategory, string> = {
-      'Wealth': '💰',
-      'Knowledge': '🔬',
-      'Productivity': '⚡',
-      'Resources': '📦',
-      'Infrastructure': '🏗️'
-};
 
 const AchievementsPage: React.FC = () => {
       const [achievements, setAchievements] = useState<(AchievementConfig & AchievementStatus)[]>([]);

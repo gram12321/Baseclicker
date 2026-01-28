@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { getBalance, setBalance, getResearch, setResearch } from '../game/gameState';
 import { formatCurrency } from '../utils/utils';
 import { ResourceType } from '../utils/types';
-import { resources } from '../resources/resourcesRegistry';
 import { Inventory } from '../lib/inventory';
 
 interface AdminDashboardProps {
