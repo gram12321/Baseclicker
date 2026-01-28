@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Inventory as InventoryType } from '../src/lib/inventory';
 import type { ResourceType as ResourceTypeEnum, BuildingType as BuildingTypeEnum } from '../src/utils/types';
 import type { builtBuildings as BuiltBuildingsType, buildFacility as BuildFacilityType } from '../src/lib/Building';
-import type { getBalance as GetBalanceType, setBalance as SetBalanceType, getResearch as GetResearchType, setResearch as SetResearchType, getResearchers as GetResearchersType, addResearchers as AddResearchersType, getGlobalProductionMultiplier as GetGlobalProductionMultiplierType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/game/gameState';
-import type { getGameday as GetGamedayType, tick as TickType } from '../src/game/gametick';
-import type { resetGame as ResetGameType } from '../src/game/gameControl';
-import type { transaction as TransactionType, getTransactionLog as GetTransactionLogType } from '../src/lib/economy';
+import type { getBalance as GetBalanceType, setBalance as SetBalanceType, getResearch as GetResearchType, setResearch as SetResearchType, getResearchers as GetResearchersType, addResearchers as AddResearchersType, getGlobalProductionMultiplier as GetGlobalProductionMultiplierType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/lib/game/gameState';
+import type { getGameday as GetGamedayType, tick as TickType } from '../src/lib/game/gametick';
+import type { resetGame as ResetGameType } from '../src/lib/game/gameControl';
+import type { transaction as TransactionType, getTransactionLog as GetTransactionLogType } from '../src/lib/market/market';
 import type { researchRecipe as ResearchRecipeType, isRecipeResearched as IsRecipeResearchedType, resetResearch as ResetResearchType, researchedRecipes as ResearchedRecipesType } from '../src/lib/research';
 
 describe('Game Reset and Prestige', () => {
@@ -40,10 +40,10 @@ describe('Game Reset and Prestige', () => {
             const inventoryModule = await import('../src/lib/inventory');
             const typesModule = await import('../src/utils/types');
             const buildingModule = await import('../src/lib/Building');
-            const gameStateModule = await import('../src/game/gameState');
-            const gametickModule = await import('../src/game/gametick');
-            const gameControlModule = await import('../src/game/gameControl');
-            const economyModule = await import('../src/lib/economy');
+            const gameStateModule = await import('../src/lib/game/gameState');
+            const gametickModule = await import('../src/lib/game/gametick');
+            const gameControlModule = await import('../src/lib/game/gameControl');
+            const economyModule = await import('../src/lib/market/market');
             const researchModule = await import('../src/lib/research');
 
             Inventory = inventoryModule.Inventory;

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Resource } from '../../resources/resource';
+import { Resource } from '../../lib/resources/resource';
 import { ResourceType, BuildingType } from '../../utils/types';
 import { formatCurrency } from '../../utils/utils';
 import { builtBuildings, Building, BUILDING_RECIPES, BUILDING_NAMES } from '../../lib/Building';
 import { isRecipeResearched } from '../../lib/research';
-import { resources } from '../../resources/resourcesRegistry';
+import { resources } from '../../lib/resources/resourcesRegistry';
 import { getResourceIcon } from '../../utils/resourceIcons';
 import { Button } from '../ui/button';
 
@@ -19,6 +19,7 @@ interface ProductionCardProps {
       upgradeCost: number;
       buildCost: number;
       level: number;
+      onError?: (msg: string) => void;
 }
 
 export const ProductionCard: React.FC<ProductionCardProps> = ({
@@ -32,6 +33,7 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
       upgradeCost,
       buildCost,
       level,
+      onError,
 }) => {
       const building = builtBuildings.get(buildingType);
       const [recipeSelected, setRecipeSelected] = useState(building?.hasRecipeSelected() ?? false);
@@ -44,6 +46,8 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
       const handleSelectRecipe = (index: number) => {
             if (building?.selectRecipe(index)) {
                   setRecipeSelected(true);
+            } else {
+                  onError?.('Recipe requires research');
             }
       };
 
@@ -140,8 +144,8 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
                                     {building && building.recipes.length > 1 && (
                                           <div className="mt-2 space-y-1">
                                                 {building.recipes
-                                                      .filter((recipe, index) => isRecipeResearched(recipe.outputResource))
                                                       .map((recipe, index) => {
+                                                            const isResearched = isRecipeResearched(recipe.outputResource);
                                                             // Find the actual index in the original recipes array
                                                             const actualIndex = building.recipes.indexOf(recipe);
                                                             return (
@@ -149,9 +153,21 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
                                                                         key={actualIndex}
                                                                         onClick={() => handleSelectRecipe(actualIndex)}
                                                                         size="sm"
-                                                                        className={`w-full ${building.currentRecipeIndex === actualIndex ? 'bg-emerald-600' : 'bg-slate-700 hover:bg-slate-600'} text-slate-300`}
+                                                                        variant={isResearched ? "default" : "secondary"}
+                                                                        className={`w-full justify-between group ${building.currentRecipeIndex === actualIndex
+                                                                              ? 'bg-emerald-600 hover:bg-emerald-500 text-slate-100'
+                                                                              : isResearched
+                                                                                    ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                                                                                    : 'bg-slate-800/50 text-slate-500 hover:bg-slate-800 cursor-not-allowed'
+                                                                              }`}
                                                                   >
-                                                                        {resources[recipe.outputResource].name}
+                                                                        <span>{resources[recipe.outputResource].name}</span>
+                                                                        {!isResearched && (
+                                                                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
+                                                                                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                                                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                                                              </svg>
+                                                                        )}
                                                                   </Button>
                                                             );
                                                       })}

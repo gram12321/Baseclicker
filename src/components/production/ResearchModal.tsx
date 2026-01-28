@@ -1,11 +1,11 @@
 import React from 'react';
-import { Resource } from '../../resources/resource';
+import { Resource } from '../../lib/resources/resource';
 import { ResourceType, Recipe } from '../../utils/types';
-import { resources } from '../../resources/resourcesRegistry';
+import { resources } from '../../lib/resources/resourcesRegistry';
 import { formatNumber } from '../../utils/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { ALL_RECIPES } from '../../recipes/recipes';
+import { ALL_RECIPES } from '../../lib/recipes/recipes';
 import { isRecipeResearched } from '../../lib/research';
 
 interface ResearchModalProps {

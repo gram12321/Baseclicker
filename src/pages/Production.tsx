@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { ResourceType, BuildingType } from '../utils/types';
-import { resources } from '../resources/resourcesRegistry';
+import { resources } from '../lib/resources/resourcesRegistry';
 import { builtBuildings, upgradeBuilding, buildFacility as buildFacilityAction, BUILDING_NAMES } from '../lib/Building';
 import { researchRecipe, isRecipeResearched } from '../lib/research';
-import { getGameday } from '../game/gametick';
-import { getBalance, getResearch } from '../game/gameState';
-import { ALL_RECIPES } from '../recipes/recipes';
+import { getGameday } from '../lib/game/gametick';
+import { getBalance, getResearch } from '../lib/game/gameState';
+import { ALL_RECIPES } from '../lib/recipes/recipes';
 import { formatCurrency } from '../utils/utils';
 import { ProductionCard } from '../components/production/ProductionCard';
 import { ResearchModal } from '../components/production/ResearchModal';
@@ -33,8 +33,20 @@ export default function Production({ refresh }: ProductionProps) {
 
       const handleActivate = (buildingType: BuildingType) => {
             const building = builtBuildings.get(buildingType);
-            building?.activate();
-            refresh();
+            if (building?.activate()) {
+                  refresh();
+            } else {
+                  if (building?.hasRecipeSelected()) {
+                        const recipe = building.currentRecipe;
+                        if (recipe && !isRecipeResearched(recipe.outputResource)) {
+                              showNotification(`Research required for ${resources[recipe.outputResource].name} production`);
+                        } else {
+                              showNotification(`Cannot activate ${BUILDING_NAMES[buildingType]}`);
+                        }
+                  } else {
+                        showNotification('Select a recipe first');
+                  }
+            }
       };
 
       const handleDeactivate = (buildingType: BuildingType) => {
@@ -225,6 +237,7 @@ export default function Production({ refresh }: ProductionProps) {
                                                 upgradeCost={builtBuildings.get(buildingType)?.getUpgradeCost() ?? 0}
                                                 buildCost={0}
                                                 level={builtBuildings.get(buildingType)?.productionUpgradeLevel ?? 0}
+                                                onError={showNotification}
                                           />
                                     ))
                               )}

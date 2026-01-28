@@ -1,9 +1,8 @@
-// economy.ts
-import { Inventory } from './inventory';
+import { Inventory } from '../inventory';
 import { Resource } from '../resources/resource';
-import { ResourceType } from '../utils/types';
+import { ResourceType } from '../../utils/types';
 import { resources } from '../resources/resourcesRegistry';
-import { formatCurrency } from '../utils/utils';
+import { formatCurrency } from '../../utils/utils';
 import { addToBalance } from '../game/gameState';
 
 const transactionLog: { amount: number; description: string; newBalance: number; timestamp: number }[] = [];
@@ -113,4 +112,13 @@ export function resetEconomy(): void {
     marketSupply[type] = resources[type].localinitsupply;
     globalMarketSupply[type] = resources[type].globalinitsupply;
   }
+}
+
+export function updateMarketSupplies(
+  resourceType: ResourceType,
+  localChange: number,
+  globalChange: number
+): void {
+  marketSupply[resourceType] = Math.max(0, marketSupply[resourceType] + localChange);
+  globalMarketSupply[resourceType] = Math.max(0, globalMarketSupply[resourceType] + globalChange);
 }

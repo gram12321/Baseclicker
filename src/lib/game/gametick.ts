@@ -1,11 +1,12 @@
 // Simple gametick system
-import { runTickHooks } from '../hooks/gametickHook';
-import { advanceProduction } from '../lib/Building';
-import { Inventory } from '../lib/inventory';
-import { autoSellResource } from '../lib/economy';
+import { runTickHooks } from '../../hooks/gametickHook';
+import { advanceProduction } from '../Building';
+import { Inventory } from '../inventory';
+import { autoSellResource } from '../market/market';
 import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch } from './gameState';
-import { ResourceType } from '../utils/types';
-import { achievementService } from '../achievements/achievementService';
+import { ResourceType } from '../../utils/types';
+import { achievementService } from '../../achievements/achievementService';
+import { processMarketDiffusion } from '../market/marketDiffusion';
 
 let gameday = 0;
 
@@ -34,6 +35,10 @@ export function tick(inventory?: Inventory) {
             }
         }
     }
+
+    // Process market diffusion
+    processMarketDiffusion();
+
     runTickHooks();
 
     // Check achievements

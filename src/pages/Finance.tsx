@@ -1,6 +1,6 @@
-import { getBalance } from '../game/gameState';
-import { getGameday } from '../game/gametick';
-import { getTransactionLog } from '../lib/economy';
+import { getBalance } from '../lib/game/gameState';
+import { getGameday } from '../lib/game/gametick';
+import { getTransactionLog } from '../lib/market/market';
 import { formatCurrency } from '../utils/utils';
 
 // Components

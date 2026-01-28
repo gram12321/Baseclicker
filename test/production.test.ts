@@ -3,8 +3,8 @@ import type { RecipeName as RecipeNameEnum, ResourceType as ResourceTypeEnum, Bu
 import type { Inventory as InventoryType } from '../src/lib/inventory';
 import type { advanceProduction as AdvanceProductionType, buildFacility as BuildFacilityType, builtBuildings as BuiltBuildingsType } from '../src/lib/Building';
 import type { researchRecipe as ResearchRecipeType } from '../src/lib/research';
-import type { setBalance as SetBalanceType, setResearch as SetResearchType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/game/gameState';
-import type { ALL_RECIPES as AllRecipesType } from '../src/recipes/recipes';
+import type { setBalance as SetBalanceType, setResearch as SetResearchType, setGlobalProductionMultiplier as SetGlobalProductionMultiplierType } from '../src/lib/game/gameState';
+import type { ALL_RECIPES as AllRecipesType } from '../src/lib/recipes/recipes';
 
 describe('Production', () => {
   let RecipeName: typeof RecipeNameEnum;
@@ -28,8 +28,8 @@ describe('Production', () => {
     const inventoryModule = await import('../src/lib/inventory');
     const buildingModule = await import('../src/lib/Building');
     const researchModule = await import('../src/lib/research');
-    const gameStateModule = await import('../src/game/gameState');
-    const recipesModule = await import('../src/recipes/recipes');
+    const gameStateModule = await import('../src/lib/game/gameState');
+    const recipesModule = await import('../src/lib/recipes/recipes');
 
     RecipeName = typesModule.RecipeName;
     ResourceType = typesModule.ResourceType;

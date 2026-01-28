@@ -1,4 +1,4 @@
-import { Recipe, RecipeName, ResourceType } from '../utils/types';
+import { Recipe, RecipeName, ResourceType } from '../../utils/types';
 
 export const HarvestWood: Recipe = {
       name: RecipeName.HarvestWood,

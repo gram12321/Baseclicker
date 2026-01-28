@@ -12,9 +12,9 @@ import Achievements from './pages/Achievements';
 
 // Components
 import { Header } from './components/layout/Header';
-import { getGameday, tick } from './game/gametick';
+import { getGameday, tick } from './lib/game/gametick';
 import { achievementService } from './achievements/achievementService';
-import { getBalance } from './game/gameState';
+import { getBalance } from './lib/game/gameState';
 
 function Navigation() {
   const location = useLocation();
@@ -90,7 +90,7 @@ function AppContent() {
           />
           <Route
             path="/production"
-            element={<Production inventoryRef={inventoryRef} refresh={refresh} />}
+            element={<Production refresh={refresh} />}
           />
           <Route
             path="/inventory"

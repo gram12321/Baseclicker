@@ -1,4 +1,4 @@
-import { ResourceType, Player } from '../utils/types';
+import { ResourceType, Player } from '../../utils/types';
 
 // Global game state: player
 

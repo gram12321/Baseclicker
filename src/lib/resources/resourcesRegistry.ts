@@ -1,5 +1,5 @@
 import { Resource } from './resource';
-import { ResourceType } from '../utils/types';
+import { ResourceType } from '../../utils/types';
 
 // Resource instances
 export const resources = {

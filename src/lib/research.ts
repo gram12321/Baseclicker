@@ -1,6 +1,6 @@
 import { ResourceType, RecipeName } from '../utils/types';
-import { getResearch, addToResearch } from '../game/gameState';
-import { ALL_RECIPES } from '../recipes/recipes';
+import { getResearch, addToResearch } from './game/gameState';
+import { ALL_RECIPES } from './recipes/recipes';
 
 /**
  * Track researched recipes globally

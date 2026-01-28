@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { getBalance, setBalance, getResearch, setResearch } from '../game/gameState';
+import { getBalance, setBalance, getResearch, setResearch } from '../lib/game/gameState';
 import { formatCurrency } from '../utils/utils';
 import { ResourceType } from '../utils/types';
 import { Inventory } from '../lib/inventory';

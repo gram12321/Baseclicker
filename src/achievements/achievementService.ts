@@ -1,10 +1,10 @@
 
 import { ALL_ACHIEVEMENTS } from './constants';
 import { AchievementConfig, AchievementStatus } from './types';
-import { getBalance, getResearch, getResearchers, getGlobalProductionMultiplier } from '../game/gameState';
+import { getBalance, getResearch, getResearchers, getGlobalProductionMultiplier } from '../lib/game/gameState';
 import { Inventory } from '../lib/inventory';
 import { ResourceType } from '../utils/types';
-import { resources } from '../resources/resourcesRegistry';
+import { resources } from '../lib/resources/resourcesRegistry';
 
 const STORAGE_KEY = 'baseclicker_achievements';
 

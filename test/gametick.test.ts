@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { getGameday as GetGamedayType, tick as TickType } from '../src/game/gametick';
+import type { getGameday as GetGamedayType, tick as TickType } from '../src/lib/game/gametick';
 import type { onTick as OnTickType, runTickHooks as RunTickHooksType } from '../src/hooks/gametickHook';
 
 describe('Gametick', () => {
@@ -13,7 +13,7 @@ describe('Gametick', () => {
     await vi.resetModules();
 
     // Re-import modules after reset
-    const gametickModule = await import('../src/game/gametick');
+    const gametickModule = await import('../src/lib/game/gametick');
     const gametickHookModule = await import('../src/hooks/gametickHook');
 
     getGameday = gametickModule.getGameday;

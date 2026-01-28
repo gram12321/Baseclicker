@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { ResourceType as ResourceTypeEnum, RecipeName as RecipeNameEnum, BuildingType as BuildingTypeEnum } from '../src/utils/types';
 import type { researchRecipe as ResearchRecipeType, isRecipeResearched as IsRecipeResearchedType, isRecipeNameResearched as IsRecipeNameResearchedType, resetResearch as ResetResearchType, researchedRecipes as ResearchedRecipesType } from '../src/lib/research';
-import type { getResearch as GetResearchType, setResearch as SetResearchType, addToResearch as AddToResearchType, getResearchers as GetResearchersType, addResearchers as AddResearchersType, setBalance as SetBalanceType, hireResearcher as HireResearcherType, getResearcherCost as GetResearcherCostType } from '../src/game/gameState';
+import type { getResearch as GetResearchType, setResearch as SetResearchType, addToResearch as AddToResearchType, getResearchers as GetResearchersType, addResearchers as AddResearchersType, setBalance as SetBalanceType, hireResearcher as HireResearcherType, getResearcherCost as GetResearcherCostType } from '../src/lib/game/gameState';
 import type { buildFacility as BuildFacilityType, builtBuildings as BuiltBuildingsType } from '../src/lib/Building';
 import type { Inventory as InventoryType } from '../src/lib/inventory';
-import type { resetGame as ResetGameType } from '../src/game/gameControl';
+import type { resetGame as ResetGameType } from '../src/lib/game/gameControl';
 
 describe('Research System', () => {
       let ResourceType: typeof ResourceTypeEnum;
@@ -34,10 +34,10 @@ describe('Research System', () => {
             // Re-import modules after reset
             const typesModule = await import('../src/utils/types');
             const researchModule = await import('../src/lib/research');
-            const gameStateModule = await import('../src/game/gameState');
+            const gameStateModule = await import('../src/lib/game/gameState');
             const buildingModule = await import('../src/lib/Building');
             const inventoryModule = await import('../src/lib/inventory');
-            const gameControlModule = await import('../src/game/gameControl');
+            const gameControlModule = await import('../src/lib/game/gameControl');
 
             ResourceType = typesModule.ResourceType;
             RecipeName = typesModule.RecipeName;

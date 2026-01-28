@@ -6,15 +6,15 @@ import {
       getResearcherCost,
       hireResearcher,
       getGlobalProductionMultiplier,
-} from '../game/gameState';
-import { getGameday } from '../game/gametick';
+} from '../lib/game/gameState';
+import { getGameday } from '../lib/game/gametick';
 import { formatCurrency, formatNumber } from '../utils/utils';
-import { resources } from '../resources/resourcesRegistry';
+import { resources } from '../lib/resources/resourcesRegistry';
 import { builtBuildings } from '../lib/Building';
 import { StatCard } from '../components/dashboard/StatCard';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { resetGame } from '../game/gameControl';
+import { resetGame } from '../lib/game/gameControl';
 import { Inventory } from '../lib/inventory';
 
 
