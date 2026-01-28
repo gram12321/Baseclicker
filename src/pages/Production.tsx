@@ -4,21 +4,24 @@ import { resources } from '../lib/resources/resourcesRegistry';
 import { builtBuildings, upgradeBuilding, buildFacility as buildFacilityAction, BUILDING_NAMES } from '../lib/Building';
 import { researchRecipe, isRecipeResearched } from '../lib/research';
 import { getGameday } from '../lib/game/gametick';
+import { Inventory } from '../lib/inventory';
 import { getBalance, getResearch } from '../lib/game/gameState';
 import { ALL_RECIPES } from '../lib/recipes/recipes';
-import { formatCurrency } from '../utils/utils';
-import { ProductionCard } from '../components/production/ProductionCard';
+import { formatCurrency, formatNumber } from '../utils/utils';
+
 import { ResearchModal } from '../components/production/ResearchModal';
 import { BuildBuildingsModal } from '../components/production/BuildBuildingsModal';
 import { Button } from '../components/ui/button';
+import { Hammer, Zap, Play, Square, AlertCircle } from 'lucide-react';
 
 const buildingTypes = Object.values(BuildingType);
 
 interface ProductionProps {
       refresh: () => void;
+      inventoryRef: React.MutableRefObject<Inventory>;
 }
 
-export default function Production({ refresh }: ProductionProps) {
+export default function Production({ refresh, inventoryRef }: ProductionProps) {
       const [errorMsg, setErrorMsg] = useState<string | null>(null);
       const [isResearchModalOpen, setIsResearchModalOpen] = useState(false);
       const [isBuildModalOpen, setIsBuildModalOpen] = useState(false);
@@ -158,21 +161,8 @@ export default function Production({ refresh }: ProductionProps) {
                                           size="lg"
                                           className="bg-blue-600 hover:bg-blue-500 text-white font-semibold"
                                     >
-                                          <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="18"
-                                                height="18"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                className="mr-2"
-                                          >
-                                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                          </svg>
-                                          Research Recipes
+                                          <Zap className="mr-2 w-4 h-4" />
+                                          Research Lab
                                     </Button>
                               </div>
                         </div>
@@ -181,28 +171,13 @@ export default function Production({ refresh }: ProductionProps) {
                               {builtFacilities.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-16 text-center">
                                           <div className="rounded-full bg-slate-950/30 p-6 mb-4">
-                                                <svg
-                                                      xmlns="http://www.w3.org/2000/svg"
-                                                      width="48"
-                                                      height="48"
-                                                      viewBox="0 0 24 24"
-                                                      fill="none"
-                                                      stroke="currentColor"
-                                                      strokeWidth="2"
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      className="text-slate-500"
-                                                >
-                                                      <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
-                                                      <circle cx="9" cy="9" r="2" />
-                                                      <circle cx="20" cy="16" r="2" />
-                                                </svg>
+                                                <Hammer className="text-slate-500 w-12 h-12" />
                                           </div>
                                           <h3 className="text-xl font-semibold text-slate-100 mb-2">
-                                                No Facilities Built Yet
+                                                Industrial Desert
                                           </h3>
                                           <p className="text-slate-400 max-w-md mb-6">
-                                                Research production recipes and build facilities to start generating resources. Click the buttons above to get started.
+                                                Your empire has no production facilities. Build some to start generating resources.
                                           </p>
                                           <div className="flex gap-3">
                                                 {hasBuildableFacilities && (
@@ -214,32 +189,123 @@ export default function Production({ refresh }: ProductionProps) {
                                                             Open Construction Yard
                                                       </Button>
                                                 )}
-                                                <Button
-                                                      onClick={() => setIsResearchModalOpen(true)}
-                                                      size="lg"
-                                                      className="bg-blue-600 hover:bg-blue-500 text-white font-semibold"
-                                                >
-                                                      Open Research Lab
-                                                </Button>
                                           </div>
                                     </div>
                               ) : (
-                                    builtFacilities.map(buildingType => (
-                                          <ProductionCard
-                                                key={buildingType}
-                                                buildingType={buildingType}
-                                                isBuilt={true}
-                                                isActive={builtBuildings.get(buildingType)?.isActive() ?? false}
-                                                onActivate={handleActivate}
-                                                onDeactivate={handleDeactivate}
-                                                onUpgrade={handleUpgradeProduction}
-                                                onBuild={handleBuildProduction}
-                                                upgradeCost={builtBuildings.get(buildingType)?.getUpgradeCost() ?? 0}
-                                                buildCost={0}
-                                                level={builtBuildings.get(buildingType)?.productionUpgradeLevel ?? 0}
-                                                onError={showNotification}
-                                          />
-                                    ))
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                          {builtFacilities.map(buildingType => {
+                                                const building = builtBuildings.get(buildingType)!;
+                                                const recipes = building.recipes;
+                                                const isActive = building.isActive();
+                                                const currentRecipe = building.currentRecipe;
+
+                                                return (
+                                                      <div key={buildingType} className={`rounded-xl border p-5 transition-all ${isActive ? 'border-emerald-500/30 bg-slate-900/80' : 'border-slate-800 bg-slate-950/60'}`}>
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                  <div>
+                                                                        <h3 className="text-lg font-bold text-slate-100">{BUILDING_NAMES[buildingType]}</h3>
+                                                                        <div className="flex items-center gap-2">
+                                                                              <div className="text-xs text-slate-500">Level {building.productionUpgradeLevel} • x{building.productionMultiplier.toFixed(2)}</div>
+                                                                              {isActive && building.isStalled(inventoryRef.current) && (
+                                                                                    <div className="flex items-center gap-1 text-[10px] text-amber-500 animate-pulse">
+                                                                                          <AlertCircle className="w-3 h-3" />
+                                                                                          <span>Missing Resources</span>
+                                                                                    </div>
+                                                                              )}
+                                                                        </div>
+                                                                  </div>
+                                                                  <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="border-slate-700 h-8 text-[10px]"
+                                                                        onClick={() => handleUpgradeProduction(buildingType)}
+                                                                  >
+                                                                        Upgrade (${formatNumber(building.getUpgradeCost(), { compact: true })})
+                                                                  </Button>
+                                                            </div>
+
+                                                            <div className="space-y-2 mb-6">
+                                                                  <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">Active Recipe</div>
+                                                                  {recipes.map(recipe => {
+                                                                        const researched = isRecipeResearched(recipe.outputResource);
+                                                                        const isSelected = building.activeRecipeName === recipe.name;
+
+                                                                        return (
+                                                                              <button
+                                                                                    key={recipe.name}
+                                                                                    disabled={!researched}
+                                                                                    onClick={() => {
+                                                                                          if (isSelected && isActive) {
+                                                                                                building.deactivate();
+                                                                                          } else {
+                                                                                                building.setProduction(recipe.name);
+                                                                                          }
+                                                                                          refresh();
+                                                                                    }}
+                                                                                    className={`w-full text-left px-3 py-2 rounded-lg border transition-all flex items-center justify-between ${isSelected && isActive
+                                                                                          ? 'bg-emerald-600/20 border-emerald-500/50 text-emerald-100'
+                                                                                          : isSelected
+                                                                                                ? 'bg-slate-800 border-slate-700 text-slate-300'
+                                                                                                : researched
+                                                                                                      ? 'hover:bg-slate-800/50 border-transparent text-slate-500'
+                                                                                                      : 'opacity-30 cursor-not-allowed border-transparent text-slate-600'
+                                                                                          }`}
+                                                                              >
+                                                                                    <div className="flex flex-col items-start gap-1 py-1">
+                                                                                          <div className="flex items-center gap-2">
+                                                                                                <span className="text-sm font-bold">{recipe.name}</span>
+                                                                                          </div>
+                                                                                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                      <span className="text-slate-500">Stock:</span>
+                                                                                                      <span className="text-emerald-400 font-medium">
+                                                                                                            {formatNumber(inventoryRef.current.getAmount(recipe.outputResource), { compact: true })}
+                                                                                                      </span>
+                                                                                                </div>
+                                                                                                {recipe.inputs.length > 0 && (
+                                                                                                      <div className="flex gap-2 border-l border-slate-700/50 pl-2">
+                                                                                                            {recipe.inputs.map(input => {
+                                                                                                                  const owned = inventoryRef.current.getAmount(input.resource);
+                                                                                                                  const isLow = owned < input.amount;
+                                                                                                                  return (
+                                                                                                                        <div key={input.resource} className="flex items-center gap-1">
+                                                                                                                              <span className="text-slate-500">{input.resource}:</span>
+                                                                                                                              <span className={isLow ? 'text-rose-400 font-bold' : 'text-slate-300'}>
+                                                                                                                                    {formatNumber(owned, { compact: true })}/{input.amount}
+                                                                                                                              </span>
+                                                                                                                        </div>
+                                                                                                                  );
+                                                                                                            })}
+                                                                                                      </div>
+                                                                                                )}
+                                                                                          </div>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                          {isSelected && isActive ? <Square className="w-3 h-3 fill-current" /> : researched ? <Play className="w-3 h-3 fill-current" /> : null}
+                                                                                    </div>
+                                                                              </button>
+                                                                        );
+                                                                  })}
+                                                            </div>
+
+                                                            {isActive && currentRecipe && (
+                                                                  <div className="space-y-1">
+                                                                        <div className="flex justify-between text-[10px] text-slate-500">
+                                                                              <span>Progress</span>
+                                                                              <span>{Math.floor((building.getCurrentProgress() / (currentRecipe.workamount || 1)) * 100)}%</span>
+                                                                        </div>
+                                                                        <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                                              <div
+                                                                                    className="h-full bg-emerald-500 transition-all duration-300"
+                                                                                    style={{ width: `${Math.min(100, (building.getCurrentProgress() / (currentRecipe.workamount || 1)) * 100)}%` }}
+                                                                              />
+                                                                        </div>
+                                                                  </div>
+                                                            )}
+                                                      </div>
+                                                );
+                                          })}
+                                    </div>
                               )}
                         </div>
                   </div>

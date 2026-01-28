@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Resource } from '../lib/resources/resource';
-import { ResourceType } from '../utils/types';
+import { ResourceType, BuildingType, RecipeName } from '../utils/types';
 import { resources } from '../lib/resources/resourcesRegistry';
 import { isAutoSellEnabled, setAutoSellEnabled, setAutoSellAmount, getAutoSellAmount, getAutoSellMinKeep, setAutoSellMinKeep } from '../lib/game/gameState';
 import { sellResource as sellResourceEconomy } from '../lib/market/market';
@@ -9,9 +9,12 @@ import { getLocalMarketSupply, getGlobalMarketSupply } from '../lib/market/marke
 import { getDiffusionInfo } from '../lib/market/marketDiffusion';
 import { formatCurrency, formatNumber } from '../utils/utils';
 import { getResourceIcon } from '../utils/resourceIcons';
+import { builtBuildings, Building, BUILDING_RECIPES, BUILDING_NAMES, upgradeBuilding, buildFacility, BUILDING_COSTS } from '../lib/Building';
+import { isRecipeResearched, researchRecipe } from '../lib/research';
+import { ALL_RECIPES } from '../lib/recipes/recipes';
 
 // Icons
-import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft, Settings } from 'lucide-react';
+import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft, Settings, Hammer, Zap, Play, Square, ArrowUpCircle, AlertCircle } from 'lucide-react';
 
 
 interface InventoryPageProps {
@@ -54,6 +57,21 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
             } else {
                   setAutoSellAmount(type, value);
             }
+            refresh();
+      };
+
+      const handleSetProduction = (building: Building, recipeName: RecipeName | null) => {
+            building.setProduction(recipeName);
+            refresh();
+      };
+
+      const handleUpgradeBuilding = (buildingType: BuildingType) => {
+            upgradeBuilding(buildingType);
+            refresh();
+      };
+
+      const handleBuildFacility = (buildingType: BuildingType) => {
+            buildFacility(buildingType);
             refresh();
       };
 
@@ -119,22 +137,50 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
 
                                                                   {/* Local Price */}
                                                                   <td className="px-4 py-4 text-center">
-                                                                        <div className="inline-flex flex-col items-center">
-                                                                              <div className="flex items-center gap-1 font-mono font-medium text-amber-400">
-                                                                                    {formatCurrency(localPrice, { maxDecimals: 2, minDecimals: 2 })}
-                                                                                    <Coins className="w-3 h-3" />
-                                                                              </div>
-                                                                        </div>
+                                                                        {(() => {
+                                                                              const priceModifier = resource.priceModifier || 1;
+                                                                              const basePrice = localPrice / priceModifier;
+                                                                              const bonusPercent = Math.round((priceModifier - 1) * 100);
+
+                                                                              return (
+                                                                                    <div className="inline-flex flex-col items-center">
+                                                                                          <div className="flex items-center gap-1 font-mono font-medium text-amber-400">
+                                                                                                {formatCurrency(basePrice, { maxDecimals: 4, minDecimals: 2 })}
+                                                                                                <Coins className="w-3 h-3" />
+                                                                                          </div>
+                                                                                          <div className="flex items-center gap-1 text-[10px] font-mono whitespace-nowrap text-slate-500">
+                                                                                                <span>{formatCurrency(localPrice, { maxDecimals: 2, minDecimals: 2 })}</span>
+                                                                                                {bonusPercent > 0 && (
+                                                                                                      <span className="text-emerald-500"> (+{bonusPercent}%)</span>
+                                                                                                )}
+                                                                                          </div>
+                                                                                    </div>
+                                                                              );
+                                                                        })()}
                                                                   </td>
 
                                                                   {/* Global Price */}
                                                                   <td className="px-4 py-4 text-center text-slate-400">
-                                                                        <div className="inline-flex flex-col items-center">
-                                                                              <div className="flex items-center gap-1 font-mono">
-                                                                                    {formatCurrency(globalPrice, { maxDecimals: 2, minDecimals: 2 })}
-                                                                                    <Globe className="w-3 h-3 text-slate-500" />
-                                                                              </div>
-                                                                        </div>
+                                                                        {(() => {
+                                                                              const priceModifier = resource.priceModifier || 1;
+                                                                              const basePrice = globalPrice / priceModifier;
+                                                                              const bonusPercent = Math.round((priceModifier - 1) * 100);
+
+                                                                              return (
+                                                                                    <div className="inline-flex flex-col items-center">
+                                                                                          <div className="flex items-center gap-1 font-mono">
+                                                                                                {formatCurrency(basePrice, { maxDecimals: 4, minDecimals: 2 })}
+                                                                                                <Globe className="w-3 h-3 text-slate-500" />
+                                                                                          </div>
+                                                                                          <div className="flex items-center gap-1 text-[10px] font-mono whitespace-nowrap text-slate-600">
+                                                                                                <span>{formatCurrency(globalPrice, { maxDecimals: 2, minDecimals: 2 })}</span>
+                                                                                                {bonusPercent > 0 && (
+                                                                                                      <span className="text-emerald-400/70"> (+{bonusPercent}%)</span>
+                                                                                                )}
+                                                                                          </div>
+                                                                                    </div>
+                                                                              );
+                                                                        })()}
                                                                   </td>
 
                                                                   {/* Local Quality */}
@@ -309,6 +355,104 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
 
                                                                                     <div className="flex-1 text-right text-xs text-slate-500 italic">
                                                                                           Changes apply immediately on next tick.
+                                                                                    </div>
+                                                                              </div>
+
+                                                                              {/* Production Facilities for this resource */}
+                                                                              <div className="mt-6 border-t border-slate-800 pt-6 px-4">
+                                                                                    <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
+                                                                                          <Zap className="w-4 h-4 text-emerald-400" />
+                                                                                          <span className="font-semibold text-slate-300">Associated Production Facilities</span>
+                                                                                    </div>
+
+                                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                          {Object.entries(BUILDING_RECIPES).map(([bType, recipes]) => {
+                                                                                                const buildingType = bType as BuildingType;
+                                                                                                const relevantRecipes = recipes.filter(r => r.outputResource === type);
+                                                                                                if (relevantRecipes.length === 0) return null;
+
+                                                                                                const building = builtBuildings.get(buildingType);
+                                                                                                const isBuilt = !!building;
+                                                                                                const displayName = BUILDING_NAMES[buildingType];
+
+                                                                                                return (
+                                                                                                      <div key={buildingType} className="rounded-xl border border-slate-700 bg-slate-900/40 p-4">
+                                                                                                            <div className="flex items-center justify-between mb-3">
+                                                                                                                  <div className="flex items-center gap-2">
+                                                                                                                        <Hammer className="w-4 h-4 text-slate-500" />
+                                                                                                                        <span className="font-medium text-slate-200">{displayName}</span>
+                                                                                                                        {isBuilt && (
+                                                                                                                              <>
+                                                                                                                                    <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">Lv. {building.productionUpgradeLevel}</span>
+                                                                                                                                    {building.isActive() && building.isStalled(inventoryRef.current) && (
+                                                                                                                                          <div className="flex items-center gap-1 text-[10px] text-amber-500 animate-pulse ml-2">
+                                                                                                                                                <AlertCircle className="w-3 h-3" />
+                                                                                                                                                <span>Missing Resources</span>
+                                                                                                                                          </div>
+                                                                                                                                    )}
+                                                                                                                              </>
+                                                                                                                        )}
+                                                                                                                  </div>
+                                                                                                                  {!isBuilt ? (
+                                                                                                                        <button
+                                                                                                                              onClick={() => handleBuildFacility(buildingType)}
+                                                                                                                              className="text-xs px-3 py-1 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-md hover:bg-emerald-600/30 transition-colors"
+                                                                                                                        >
+                                                                                                                              Build (${BUILDING_COSTS[buildingType]})
+                                                                                                                        </button>
+                                                                                                                  ) : (
+                                                                                                                        <button
+                                                                                                                              onClick={() => handleUpgradeBuilding(buildingType)}
+                                                                                                                              className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 transition-colors"
+                                                                                                                        >
+                                                                                                                              <ArrowUpCircle className="w-3 h-3" />
+                                                                                                                              Upgrade (${building.getUpgradeCost()})
+                                                                                                                        </button>
+                                                                                                                  )}
+                                                                                                            </div>
+
+                                                                                                            {isBuilt ? (
+                                                                                                                  <div className="space-y-2">
+                                                                                                                        {relevantRecipes.map(recipe => {
+                                                                                                                              const isResearched = isRecipeResearched(recipe.outputResource);
+                                                                                                                              const isCurrent = building.activeRecipeName === recipe.name && building.isActive();
+
+                                                                                                                              return (
+                                                                                                                                    <div key={recipe.name} className="flex items-center justify-between gap-3">
+                                                                                                                                          <div className="flex flex-col">
+                                                                                                                                                <span className={`text-sm ${isCurrent ? 'text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                                                                                                                                                      {recipe.name}
+                                                                                                                                                </span>
+                                                                                                                                                {recipe.inputs.length > 0 && (
+                                                                                                                                                      <span className="text-[10px] text-slate-600">
+                                                                                                                                                            In: {recipe.inputs.map(i => `${i.amount} ${i.resource}`).join(', ')}
+                                                                                                                                                      </span>
+                                                                                                                                                )}
+                                                                                                                                          </div>
+
+                                                                                                                                          {!isResearched ? (
+                                                                                                                                                <span className="text-[10px] text-slate-600 italic">Not Researched</span>
+                                                                                                                                          ) : (
+                                                                                                                                                <button
+                                                                                                                                                      onClick={() => handleSetProduction(building, isCurrent ? null : recipe.name)}
+                                                                                                                                                      className={`p-1.5 rounded-lg transition-all ${isCurrent
+                                                                                                                                                            ? 'bg-rose-600/20 text-rose-400 border border-rose-500/30'
+                                                                                                                                                            : 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
+                                                                                                                                                            }`}
+                                                                                                                                                >
+                                                                                                                                                      {isCurrent ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+                                                                                                                                                </button>
+                                                                                                                                          )}
+                                                                                                                                    </div>
+                                                                                                                              );
+                                                                                                                        })}
+                                                                                                                  </div>
+                                                                                                            ) : (
+                                                                                                                  <div className="text-xs text-slate-600 italic">Build this facility to start production</div>
+                                                                                                            )}
+                                                                                                      </div>
+                                                                                                );
+                                                                                          })}
                                                                                     </div>
                                                                               </div>
                                                                         </td>

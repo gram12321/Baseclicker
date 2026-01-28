@@ -161,7 +161,7 @@ describe('Research System', () => {
                   const farm = builtBuildings.get(BuildingType.Farm);
 
                   // Try to select an unresearched recipe (Grain)
-                  const result = farm?.selectRecipe(0);
+                  const result = farm?.selectRecipe(RecipeName.GrowGrain);
 
                   expect(result).toBe(false);
                   // Even if the constructor auto-selected it, activation must fail
@@ -179,7 +179,7 @@ describe('Research System', () => {
                   const farm = builtBuildings.get(BuildingType.Farm);
 
                   // Now selection should work
-                  const result = farm?.selectRecipe(0);
+                  const result = farm?.selectRecipe(RecipeName.GrowGrain);
 
                   expect(result).toBe(true);
                   expect(farm?.hasRecipeSelected()).toBe(true);
