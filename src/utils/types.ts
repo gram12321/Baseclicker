@@ -6,6 +6,9 @@ export enum ResourceType {
       Sugar = 'Sugar',
       Bread = 'Bread',
       Cake = 'Cake',
+      Water = 'Water',
+      Electricity = 'Electricity',
+      Coal = 'Coal',
 }
 
 export enum BuildingType {
@@ -14,6 +17,8 @@ export enum BuildingType {
       Mine = 'Mine',
       Farm = 'Farm',
       Bakery = 'Bakery',
+      WaterWell = 'Water Well',
+      PowerPlant = 'Power Plant',
 }
 
 export enum RecipeName {
@@ -24,6 +29,11 @@ export enum RecipeName {
       GrowSugar = 'Grow Sugar',
       BakeBread = 'Bake Bread',
       BakeCake = 'Bake Cake',
+      ManualPumping = 'Manual Pumping',
+      ElectricPumping = 'Electric Pumping',
+      MineCoal = 'Mine Coal',
+      CoalPower = 'Coal Power',
+      SolarPower = 'Solar Power',
 }
 
 export interface RecipeInput {

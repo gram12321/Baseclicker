@@ -49,7 +49,7 @@ describe('Production Quality System', () => {
             setResearch(1000);
 
             // Build and upgrade forestry to high quality
-            researchRecipe(ResourceType.Wood);
+            researchRecipe(RecipeName.HarvestWood);
             buildFacility(BuildingType.Forestry);
 
             // Upgrade building quality multiple times
@@ -63,7 +63,7 @@ describe('Production Quality System', () => {
             // Set tech level lower than building quality
             setTechLevel(ResourceType.Wood, 2);
 
-            const inv = new Inventory();
+            const inv = new Inventory({ [ResourceType.Electricity]: 100 });
             building.activate();
             advanceProduction(inv);
 
@@ -77,7 +77,7 @@ describe('Production Quality System', () => {
             setResearch(1000);
 
             // Build mine with high quality and tech
-            researchRecipe(ResourceType.Iron);
+            researchRecipe(RecipeName.SmeltIron);
             buildFacility(BuildingType.Mine);
 
             // Upgrade building quality
@@ -91,9 +91,10 @@ describe('Production Quality System', () => {
             setTechLevel(ResourceType.Iron, 10);
 
             // Add low quality stone as input
-            const inv = new Inventory();
+            const inv = new Inventory({ [ResourceType.Electricity]: 100 });
             inv.add(ResourceType.Stone, 10, 1.5); // Quality 1.5
 
+            building.selectRecipe(RecipeName.SmeltIron);
             building.activate();
             // SmeltIron has workamount 2, so advance twice to complete
             advanceProduction(inv);
@@ -102,9 +103,10 @@ describe('Production Quality System', () => {
             // Verify production happened
             expect(inv.getAmount(ResourceType.Iron)).toBeGreaterThan(0);
 
-            // Output should be capped by input quality + 1 = 2.5
+            // Output should be capped by input quality + 1 = 2.25
+            // (Average of Stone Q1.5 and Electricity Q1.0 = 1.25)
             const ironQuality = inv.getQuality(ResourceType.Iron);
-            expect(ironQuality).toBe(2.5);
+            expect(ironQuality).toBe(2.25);
             expect(building.productionQuality).toBeGreaterThan(2.5); // Building can do more
       });
 
@@ -113,7 +115,7 @@ describe('Production Quality System', () => {
             setResearch(1000);
 
             // Build mine with LOW building quality
-            researchRecipe(ResourceType.Iron);
+            researchRecipe(RecipeName.SmeltIron);
             buildFacility(BuildingType.Mine);
 
             const building = builtBuildings.get(BuildingType.Mine)!;
@@ -122,9 +124,10 @@ describe('Production Quality System', () => {
             setTechLevel(ResourceType.Iron, 10);
 
             // Add high quality stone as input
-            const inv = new Inventory();
+            const inv = new Inventory({ [ResourceType.Electricity]: 100 });
             inv.add(ResourceType.Stone, 10, 5.0); // Quality 5.0
 
+            building.selectRecipe(RecipeName.SmeltIron);
             building.activate();
             advanceProduction(inv);
 
@@ -136,7 +139,7 @@ describe('Production Quality System', () => {
             setBalance(100000);
             setResearch(1000);
 
-            researchRecipe(ResourceType.Iron);
+            researchRecipe(RecipeName.SmeltIron);
             buildFacility(BuildingType.Mine);
 
             // Upgrade building quality to ~2.0
@@ -148,14 +151,17 @@ describe('Production Quality System', () => {
             // Tech = 3, Building = ~2.0, Input = 1.0
             setTechLevel(ResourceType.Iron, 3);
 
-            const inv = new Inventory();
+            const inv = new Inventory({ [ResourceType.Electricity]: 100 });
             inv.add(ResourceType.Stone, 10, 1.0); // Quality 1.0
 
+            building.selectRecipe(RecipeName.SmeltIron);
             building.activate();
             advanceProduction(inv);
             advanceProduction(inv);
 
-            // Output should be min(~2.0, 3, 2.0) = ~2.0 (input + 1 cap)
+            // Output should be min(~2.0, 3, 2.0) = 2.0
+            // Input quality: (Stone Q1.0 + Electricity Q1.0) / 2 = 1.0
+            // Cap: 1.0 + 1.0 = 2.0
             expect(inv.getQuality(ResourceType.Iron)).toBe(2.0);
       });
 });

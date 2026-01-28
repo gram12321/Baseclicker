@@ -11,6 +11,7 @@ import type { researchRecipe as ResearchRecipeType, isRecipeResearched as IsReci
 describe('Game Reset and Prestige', () => {
       let Inventory: typeof InventoryType;
       let ResourceType: typeof ResourceTypeEnum;
+      let RecipeName: typeof RecipeNameEnum;
       let BuildingType: typeof BuildingTypeEnum;
       let builtBuildings: typeof BuiltBuildingsType;
       let buildFacility: typeof BuildFacilityType;
@@ -48,6 +49,7 @@ describe('Game Reset and Prestige', () => {
 
             Inventory = inventoryModule.Inventory;
             ResourceType = typesModule.ResourceType;
+            RecipeName = typesModule.RecipeName;
             BuildingType = typesModule.BuildingType;
             builtBuildings = buildingModule.builtBuildings;
             buildFacility = buildingModule.buildFacility;
@@ -149,8 +151,8 @@ describe('Game Reset and Prestige', () => {
                   setResearch(100);
 
                   // Research multiple recipes
-                  researchRecipe(ResourceType.Wood);
-                  researchRecipe(ResourceType.Stone);
+                  researchRecipe(RecipeName.HarvestWood);
+                  researchRecipe(RecipeName.QuarryStone);
 
                   expect(researchedRecipes.size).toBe(2);
 
@@ -158,8 +160,8 @@ describe('Game Reset and Prestige', () => {
                   resetResearch();
 
                   expect(researchedRecipes.size).toBe(0);
-                  expect(isRecipeResearched(ResourceType.Wood)).toBe(false);
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(false);
+                  expect(isRecipeResearched(RecipeName.HarvestWood)).toBe(false);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(false);
             });
 
             it('resets researched recipes during game reset', () => {
@@ -167,18 +169,18 @@ describe('Game Reset and Prestige', () => {
                   const inv = new Inventory();
 
                   // Research recipes
-                  researchRecipe(ResourceType.Wood);
-                  researchRecipe(ResourceType.Stone);
+                  researchRecipe(RecipeName.HarvestWood);
+                  researchRecipe(RecipeName.QuarryStone);
 
-                  expect(isRecipeResearched(ResourceType.Wood)).toBe(true);
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.HarvestWood)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(true);
 
                   // Perform game reset
                   resetGame(inv);
 
                   // Researched recipes should be cleared
-                  expect(isRecipeResearched(ResourceType.Wood)).toBe(false);
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(false);
+                  expect(isRecipeResearched(RecipeName.HarvestWood)).toBe(false);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(false);
                   expect(researchedRecipes.size).toBe(0);
             });
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ResourceType, BuildingType } from '../utils/types';
+import { ResourceType, BuildingType, RecipeName } from '../utils/types';
 import { resources } from '../lib/resources/resourcesRegistry';
 import { builtBuildings, upgradeBuilding, upgradeBuildingQuality, buildFacility as buildFacilityAction, BUILDING_NAMES } from '../lib/Building';
 import { researchRecipe, isRecipeResearched } from '../lib/research';
@@ -41,8 +41,8 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
             } else {
                   if (building?.hasRecipeSelected()) {
                         const recipe = building.currentRecipe;
-                        if (recipe && !isRecipeResearched(recipe.outputResource)) {
-                              showNotification(`Research required for ${resources[recipe.outputResource].name} production`);
+                        if (recipe && !isRecipeResearched(recipe.name)) {
+                              showNotification(`Research required for ${recipe.name}`);
                         } else {
                               showNotification(`Cannot activate ${BUILDING_NAMES[buildingType]}`);
                         }
@@ -85,12 +85,12 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
             }
       };
 
-      const handleResearch = (type: ResourceType) => {
-            if (researchRecipe(type)) {
-                  showNotification(`Successfully researched ${resources[type].name} Recipe!`);
+      const handleResearch = (name: RecipeName) => {
+            if (researchRecipe(name)) {
+                  showNotification(`Successfully researched ${name}!`);
                   refresh();
             } else {
-                  showNotification(`Insufficient research points to research ${resources[type].name} Recipe`);
+                  showNotification(`Insufficient research points to research ${name}`);
             }
       };
 
@@ -99,7 +99,7 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
 
       // Check if there are any unresearched recipes
       const hasUnresearchedRecipes = Object.values(ALL_RECIPES).some(
-            recipe => !isRecipeResearched(recipe.outputResource)
+            recipe => !isRecipeResearched(recipe.name)
       );
 
       // Check if there are any not-built facilities (no research requirement)
@@ -257,7 +257,7 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
                                                             <div className="space-y-2 mb-6">
                                                                   <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">Active Recipe</div>
                                                                   {recipes.map(recipe => {
-                                                                        const researched = isRecipeResearched(recipe.outputResource);
+                                                                        const researched = isRecipeResearched(recipe.name);
                                                                         const isSelected = building.activeRecipeName === recipe.name;
 
                                                                         return (

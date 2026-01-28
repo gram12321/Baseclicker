@@ -10,11 +10,13 @@ import { getDiffusionInfo } from '../lib/market/marketDiffusion';
 import { formatCurrency, formatNumber } from '../utils/utils';
 import { getResourceIcon } from '../utils/resourceIcons';
 import { builtBuildings, Building, BUILDING_RECIPES, BUILDING_NAMES, upgradeBuilding, buildFacility, BUILDING_COSTS } from '../lib/Building';
-import { isRecipeResearched, researchRecipe } from '../lib/research';
-import { ALL_RECIPES } from '../lib/recipes/recipes';
+import { isRecipeResearched } from '../lib/research';
+
 
 // Icons
-import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft, Settings, Hammer, Zap, Play, Square, ArrowUpCircle, AlertCircle } from 'lucide-react';
+import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft, Settings, Hammer, Zap, Play, Square, ArrowUpCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+
+type SortKey = 'name' | 'localPrice' | 'globalPrice' | 'localQuality' | 'globalQuality' | 'localSupply' | 'globalSupply' | 'amount';
 
 
 interface InventoryPageProps {
@@ -31,6 +33,66 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
             Object.fromEntries(resourceEntries.map(([type]) => [type, 1]))
       );
       const [expandedResource, setExpandedResource] = useState<ResourceType | null>(null);
+      const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
+
+      const handleSort = (key: SortKey) => {
+            let direction: 'asc' | 'desc' = 'asc';
+            if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+                  direction = 'desc';
+            }
+            setSortConfig({ key, direction });
+      };
+
+      const sortedResources = React.useMemo(() => {
+            const data = resourceEntries.map(([type, resource]) => {
+                  const localSupply = getLocalMarketSupply(type);
+                  const globalSupply = getGlobalMarketSupply(type);
+                  const localMarketQuality = getLocalMarketQuality(type);
+                  const globalMarketQuality = getGlobalMarketQuality(type);
+                  const localPrice = resource.getLocalPrice(localSupply, localMarketQuality);
+                  const globalPrice = resource.getGlobalPrice(globalSupply, globalMarketQuality);
+                  const amount = inventoryRef.current.getAmount(type);
+
+                  return {
+                        type,
+                        resource,
+                        name: resource.name,
+                        localPrice,
+                        globalPrice,
+                        localQuality: localMarketQuality,
+                        globalQuality: globalMarketQuality,
+                        localSupply,
+                        globalSupply,
+                        amount
+                  };
+            });
+
+            if (!sortConfig) return data;
+
+            return [...data].sort((a, b) => {
+                  const aVal = a[sortConfig.key];
+                  const bVal = b[sortConfig.key];
+
+                  if (typeof aVal === 'string' && typeof bVal === 'string') {
+                        return sortConfig.direction === 'asc'
+                              ? aVal.localeCompare(bVal)
+                              : bVal.localeCompare(aVal);
+                  }
+
+                  if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+                  }
+
+                  return 0;
+            });
+      }, [resourceEntries, sortConfig, refreshToken, inventoryRef]);
+
+      const renderSortIcon = (key: SortKey) => {
+            if (!sortConfig || sortConfig.key !== key) return <ChevronsUpDown className="w-3 h-3 opacity-30" />;
+            return sortConfig.direction === 'asc'
+                  ? <ChevronUp className="w-3 h-3 text-indigo-400" />
+                  : <ChevronDown className="w-3 h-3 text-indigo-400" />;
+      };
 
       const handleSliderChange = (type: ResourceType, value: number) => {
             setTradeAmounts(prev => ({ ...prev, [type]: value }));
@@ -93,30 +155,55 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
 
                               <table className="w-full text-left border-collapse min-w-[1100px]">
                                     <thead>
-                                          <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider">
-                                                <th className="px-4 py-3 font-medium">Resource</th>
-                                                <th className="px-4 py-3 font-medium text-center">Local Price</th>
-                                                <th className="px-4 py-3 font-medium text-center">Global Price</th>
-                                                <th className="px-4 py-3 font-medium text-center">Local Quality</th>
-                                                <th className="px-4 py-3 font-medium text-center">Global Quality</th>
-                                                <th className="px-4 py-3 font-medium text-center">Local Market</th>
-                                                <th className="px-4 py-3 font-medium text-center">Global Market</th>
+                                          <tr className="border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
+                                                <th className="px-4 py-3 font-medium cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('name')}>
+                                                      <div className="flex items-center gap-1">
+                                                            Resource {renderSortIcon('name')}
+                                                      </div>
+                                                </th>
+                                                <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('localPrice')}>
+                                                      <div className="flex items-center justify-center gap-1">
+                                                            Local Price {renderSortIcon('localPrice')}
+                                                      </div>
+                                                </th>
+                                                <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('globalPrice')}>
+                                                      <div className="flex items-center justify-center gap-1">
+                                                            Global Price {renderSortIcon('globalPrice')}
+                                                      </div>
+                                                </th>
+                                                <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('localQuality')}>
+                                                      <div className="flex items-center justify-center gap-1">
+                                                            Local Quality {renderSortIcon('localQuality')}
+                                                      </div>
+                                                </th>
+                                                <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('globalQuality')}>
+                                                      <div className="flex items-center justify-center gap-1">
+                                                            Global Quality {renderSortIcon('globalQuality')}
+                                                      </div>
+                                                </th>
+                                                <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('localSupply')}>
+                                                      <div className="flex items-center justify-center gap-1">
+                                                            Local Market {renderSortIcon('localSupply')}
+                                                      </div>
+                                                </th>
+                                                <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('globalSupply')}>
+                                                      <div className="flex items-center justify-center gap-1">
+                                                            Global Market {renderSortIcon('globalSupply')}
+                                                      </div>
+                                                </th>
                                                 <th className="px-4 py-3 font-medium text-center">Flow</th>
-                                                <th className="px-4 py-3 font-medium text-right">Inventory</th>
+                                                <th className="px-4 py-3 font-medium text-right cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('amount')}>
+                                                      <div className="flex items-center justify-end gap-1">
+                                                            Inventory {renderSortIcon('amount')}
+                                                      </div>
+                                                </th>
                                                 <th className="px-4 py-3 font-medium text-center w-48">Trade Amount</th>
                                                 <th className="px-4 py-3 font-medium text-right">Actions</th>
                                           </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-800/50">
-                                          {resourceEntries.map(([type, resource]) => {
-                                                const amount = inventoryRef.current.getAmount(type);
-                                                const localSupply = getLocalMarketSupply(type);
-                                                const globalSupply = getGlobalMarketSupply(type);
-                                                const localMarketQuality = getLocalMarketQuality(type);
-                                                const globalMarketQuality = getGlobalMarketQuality(type);
+                                          {sortedResources.map(({ type, resource, amount, localSupply, globalSupply, localQuality, globalQuality, localPrice, globalPrice }) => {
                                                 const inventoryQuality = inventoryRef.current.getQuality(type);
-                                                const localPrice = resource.getLocalPrice(localSupply, localMarketQuality);
-                                                const globalPrice = resource.getGlobalPrice(globalSupply, globalMarketQuality);
                                                 const autosell = isAutoSellEnabled(type);
                                                 const currentTradeAmount = tradeAmounts[type] || 1;
                                                 const autoSellAmount = getAutoSellAmount(type);
@@ -188,12 +275,12 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
 
                                                                   {/* Local Quality */}
                                                                   <td className="px-4 py-4 text-center">
-                                                                        <span className="text-slate-500 font-mono text-xs italic">{formatNumber(localMarketQuality, { decimals: 2, forceDecimals: true })}</span>
+                                                                        <span className="text-slate-500 font-mono text-xs italic">{formatNumber(localQuality, { decimals: 2, forceDecimals: true })}</span>
                                                                   </td>
 
                                                                   {/* Global Quality */}
                                                                   <td className="px-4 py-4 text-center">
-                                                                        <span className="text-slate-500 font-mono text-xs italic">{formatNumber(globalMarketQuality, { decimals: 2, forceDecimals: true })}</span>
+                                                                        <span className="text-slate-500 font-mono text-xs italic">{formatNumber(globalQuality, { decimals: 2, forceDecimals: true })}</span>
                                                                   </td>
 
                                                                   {/* Local Market Supply */}
@@ -420,7 +507,7 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                                                                             {isBuilt ? (
                                                                                                                   <div className="space-y-2">
                                                                                                                         {relevantRecipes.map(recipe => {
-                                                                                                                              const isResearched = isRecipeResearched(recipe.outputResource);
+                                                                                                                              const isResearched = isRecipeResearched(recipe.name);
                                                                                                                               const isCurrent = building.activeRecipeName === recipe.name && building.isActive();
 
                                                                                                                               return (

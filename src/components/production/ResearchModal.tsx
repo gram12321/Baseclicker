@@ -1,6 +1,6 @@
 import React from 'react';
 import { Resource } from '../../lib/resources/resource';
-import { ResourceType, Recipe } from '../../utils/types';
+import { ResourceType, Recipe, RecipeName } from '../../utils/types';
 import { resources } from '../../lib/resources/resourcesRegistry';
 import { formatNumber } from '../../utils/utils';
 import { Button } from '../ui/button';
@@ -11,7 +11,7 @@ import { isRecipeResearched } from '../../lib/research';
 interface ResearchModalProps {
       isOpen: boolean;
       onClose: () => void;
-      onResearch: (type: ResourceType) => void;
+      onResearch: (name: RecipeName) => void;
       availableResearch: number;
 }
 
@@ -26,8 +26,8 @@ export const ResearchModal: React.FC<ResearchModalProps> = ({
       // Show all recipes
       const allRecipes = Object.values(ALL_RECIPES);
 
-      const handleResearch = (type: ResourceType) => {
-            onResearch(type);
+      const handleResearch = (name: RecipeName) => {
+            onResearch(name);
       };
 
       return (
@@ -81,7 +81,7 @@ export const ResearchModal: React.FC<ResearchModalProps> = ({
 interface ResearchCardProps {
       recipe: Recipe;
       availableResearch: number;
-      onResearch: (type: ResourceType) => void;
+      onResearch: (name: RecipeName) => void;
 }
 
 const ResearchCard: React.FC<ResearchCardProps> = ({
@@ -89,7 +89,7 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
       availableResearch,
       onResearch,
 }) => {
-      const isResearched = isRecipeResearched(recipe.outputResource);
+      const isResearched = isRecipeResearched(recipe.name);
       const canAfford = !isResearched && availableResearch >= recipe.researchCost;
 
       return (
@@ -146,7 +146,7 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
 
                         {/* Research Button */}
                         <Button
-                              onClick={() => onResearch(recipe.outputResource)}
+                              onClick={() => onResearch(recipe.name)}
                               disabled={isResearched || !canAfford}
                               className={`w-full ${isResearched
                                     ? 'bg-emerald-600 text-white cursor-not-allowed opacity-75'

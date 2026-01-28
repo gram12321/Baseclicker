@@ -94,7 +94,7 @@ const BuildCard: React.FC<BuildCardProps> = ({
       const recipes = BUILDING_RECIPES[type];
 
       // Filter to only show researched recipes
-      const researchedRecipesList = recipes.filter(r => isRecipeResearched(r.outputResource));
+      const researchedRecipesList = recipes.filter(r => isRecipeResearched(r.name));
 
       // Only show detailed stats if there is exactly one recipe type
       const singleRecipe = recipes.length === 1 ? recipes[0] : null;

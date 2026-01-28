@@ -10,6 +10,9 @@ export const resources = {
   [ResourceType.Sugar]: new Resource(ResourceType.Sugar, 'Sugar', 10000, 100000, 100000, 1000000),
   [ResourceType.Bread]: new Resource(ResourceType.Bread, 'Bread', 10000, 50000, 100000, 500000),
   [ResourceType.Cake]: new Resource(ResourceType.Cake, 'Cake', 10000, 5000, 100000, 50000),
+  [ResourceType.Water]: new Resource(ResourceType.Water, 'Water', 10000, 100000, 100000, 1000000),
+  [ResourceType.Electricity]: new Resource(ResourceType.Electricity, 'Electricity', 10000, 50000, 100000, 500000),
+  [ResourceType.Coal]: new Resource(ResourceType.Coal, 'Coal', 10000, 5000, 100000, 50000),
 };
 
 export function resetResources(): void {

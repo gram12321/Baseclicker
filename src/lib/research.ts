@@ -8,20 +8,20 @@ import { ALL_RECIPES } from './recipes/recipes';
 export const researchedRecipes: Set<RecipeName> = new Set();
 
 /**
- * Research a recipe for a given resource type
- * @param resourceType - The resource type to research
+ * Research a specific recipe
+ * @param recipeName - The recipe name to research
  * @returns true if research was successful, false otherwise
  */
-export function researchRecipe(resourceType: ResourceType): boolean {
-      const recipe = Object.values(ALL_RECIPES).find(r => r.outputResource === resourceType);
+export function researchRecipe(recipeName: RecipeName): boolean {
+      const recipe = ALL_RECIPES[recipeName];
 
-      if (!recipe || researchedRecipes.has(recipe.name)) return false;
+      if (!recipe || researchedRecipes.has(recipeName)) return false;
 
       const researchCost = Math.max(0, recipe.researchCost);
 
       if (getResearch() < researchCost) return false;
 
-      researchedRecipes.add(recipe.name);
+      researchedRecipes.add(recipeName);
       if (researchCost > 0) {
             addToResearch(-researchCost);
       }
@@ -29,13 +29,12 @@ export function researchRecipe(resourceType: ResourceType): boolean {
 }
 
 /**
- * Check if a resource's recipe is researched
- * @param resourceType - The resource type to check
+ * Check if a specific recipe is researched
+ * @param recipeName - The recipe name to check
  * @returns true if the recipe is researched, false otherwise
  */
-export function isRecipeResearched(resourceType: ResourceType): boolean {
-      const recipe = Object.values(ALL_RECIPES).find(r => r.outputResource === resourceType);
-      return recipe ? researchedRecipes.has(recipe.name) : false;
+export function isRecipeResearched(recipeName: RecipeName): boolean {
+      return researchedRecipes.has(recipeName);
 }
 
 /**

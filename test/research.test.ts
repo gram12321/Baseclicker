@@ -65,17 +65,17 @@ describe('Research System', () => {
             it('successfully researches a recipe with sufficient RP', () => {
                   setResearch(100);
 
-                  const result = researchRecipe(ResourceType.Stone);
+                  const result = researchRecipe(RecipeName.QuarryStone);
 
                   expect(result).toBe(true);
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(true);
                   expect(getResearch()).toBe(90); // 100 - 10 (Stone research cost)
             });
 
             it('deducts correct RP amount when researching', () => {
                   setResearch(100);
 
-                  researchRecipe(ResourceType.Iron); // Cost: 50 RP
+                  researchRecipe(RecipeName.SmeltIron); // Cost: 50 RP
 
                   expect(getResearch()).toBe(50); // 100 - 50
             });
@@ -83,29 +83,29 @@ describe('Research System', () => {
             it('does not deduct RP for free recipes (0 cost)', () => {
                   setResearch(100);
 
-                  researchRecipe(ResourceType.Wood); // Cost: 0 RP
+                  researchRecipe(RecipeName.HarvestWood); // Cost: 0 RP
 
                   expect(getResearch()).toBe(100); // No deduction
-                  expect(isRecipeResearched(ResourceType.Wood)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.HarvestWood)).toBe(true);
             });
 
             it('fails to research when insufficient RP', () => {
                   setResearch(5);
 
-                  const result = researchRecipe(ResourceType.Stone); // Cost: 10 RP
+                  const result = researchRecipe(RecipeName.QuarryStone); // Cost: 10 RP
 
                   expect(result).toBe(false);
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(false);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(false);
                   expect(getResearch()).toBe(5); // No deduction
             });
 
             it('fails to research already researched recipe', () => {
                   setResearch(100);
 
-                  researchRecipe(ResourceType.Stone);
+                  researchRecipe(RecipeName.QuarryStone);
                   const initialRP = getResearch();
 
-                  const result = researchRecipe(ResourceType.Stone); // Try again
+                  const result = researchRecipe(RecipeName.QuarryStone); // Try again
 
                   expect(result).toBe(false);
                   expect(getResearch()).toBe(initialRP); // No additional deduction
@@ -123,13 +123,13 @@ describe('Research System', () => {
       describe('isRecipeResearched', () => {
             it('returns true for researched recipes', () => {
                   setResearch(100);
-                  researchRecipe(ResourceType.Stone);
+                  researchRecipe(RecipeName.QuarryStone);
 
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(true);
             });
 
             it('returns false for unresearched recipes', () => {
-                  expect(isRecipeResearched(ResourceType.Iron)).toBe(false);
+                  expect(isRecipeResearched(RecipeName.SmeltIron)).toBe(false);
             });
 
             it('returns false for non-existent resources', () => {
@@ -140,7 +140,7 @@ describe('Research System', () => {
       describe('isRecipeNameResearched', () => {
             it('returns true for researched recipe names', () => {
                   setResearch(100);
-                  researchRecipe(ResourceType.Stone);
+                  researchRecipe(RecipeName.QuarryStone);
 
                   expect(isRecipeNameResearched(RecipeName.QuarryStone)).toBe(true);
             });
@@ -173,7 +173,7 @@ describe('Research System', () => {
                   setBalance(10000);
 
                   // Research the recipe first
-                  researchRecipe(ResourceType.Grain);
+                  researchRecipe(RecipeName.GrowGrain);
 
                   buildFacility(BuildingType.Farm);
                   const farm = builtBuildings.get(BuildingType.Farm);
@@ -207,24 +207,24 @@ describe('Research System', () => {
             it('allows researching multiple recipes', () => {
                   setResearch(1000);
 
-                  researchRecipe(ResourceType.Wood);   // 0 RP
-                  researchRecipe(ResourceType.Stone);  // 10 RP
-                  researchRecipe(ResourceType.Grain);  // 5 RP
-                  researchRecipe(ResourceType.Iron);   // 50 RP
+                  researchRecipe(RecipeName.HarvestWood);   // 0 RP
+                  researchRecipe(RecipeName.QuarryStone);  // 10 RP
+                  researchRecipe(RecipeName.GrowGrain);  // 5 RP
+                  researchRecipe(RecipeName.SmeltIron);   // 50 RP
 
-                  expect(isRecipeResearched(ResourceType.Wood)).toBe(true);
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(true);
-                  expect(isRecipeResearched(ResourceType.Grain)).toBe(true);
-                  expect(isRecipeResearched(ResourceType.Iron)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.HarvestWood)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.GrowGrain)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.SmeltIron)).toBe(true);
                   expect(getResearch()).toBe(935); // 1000 - 10 - 5 - 50
             });
 
             it('tracks all researched recipes in the set', () => {
                   setResearch(1000);
 
-                  researchRecipe(ResourceType.Wood);
-                  researchRecipe(ResourceType.Stone);
-                  researchRecipe(ResourceType.Grain);
+                  researchRecipe(RecipeName.HarvestWood);
+                  researchRecipe(RecipeName.QuarryStone);
+                  researchRecipe(RecipeName.GrowGrain);
 
                   expect(researchedRecipes.size).toBe(3);
                   expect(researchedRecipes.has(RecipeName.HarvestWood)).toBe(true);
@@ -237,27 +237,27 @@ describe('Research System', () => {
             it('handles exact RP amount for research', () => {
                   setResearch(10); // Exact amount for Stone
 
-                  const result = researchRecipe(ResourceType.Stone);
+                  const result = researchRecipe(RecipeName.QuarryStone);
 
                   expect(result).toBe(true);
                   expect(getResearch()).toBe(0);
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(true);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(true);
             });
 
             it('handles research with 1 RP less than needed', () => {
                   setResearch(9); // 1 less than Stone's 10 RP cost
 
-                  const result = researchRecipe(ResourceType.Stone);
+                  const result = researchRecipe(RecipeName.QuarryStone);
 
                   expect(result).toBe(false);
                   expect(getResearch()).toBe(9);
-                  expect(isRecipeResearched(ResourceType.Stone)).toBe(false);
+                  expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(false);
             });
 
             it('handles negative RP values gracefully', () => {
                   setResearch(-10);
 
-                  const result = researchRecipe(ResourceType.Wood); // Free recipe
+                  const result = researchRecipe(RecipeName.HarvestWood); // Free recipe
 
                   // Should still fail because getResearch() < 0
                   expect(result).toBe(false);

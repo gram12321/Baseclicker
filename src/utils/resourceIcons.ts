@@ -8,6 +8,9 @@ export const RESOURCE_ICONS: Record<ResourceType, string> = {
       [ResourceType.Sugar]: '🍬',
       [ResourceType.Bread]: '🍞',
       [ResourceType.Cake]: '🍰',
+      [ResourceType.Water]: '💧',
+      [ResourceType.Electricity]: '⚡',
+      [ResourceType.Coal]: '🌑',
 };
 
 export function getResourceIcon(type: ResourceType): string {

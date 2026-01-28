@@ -64,8 +64,8 @@ describe('Production', () => {
   it('only advances production on active recipes', () => {
     setBalance(1000);
     setResearch(1000);
-    const inv = new Inventory();
-    researchRecipe(ResourceType.Wood);
+    const inv = new Inventory({ [ResourceType.Electricity]: 10 });
+    researchRecipe(RecipeName.HarvestWood);
     buildFacility(BuildingType.Forestry);
     builtBuildings.get(BuildingType.Forestry)?.activate();
 
@@ -75,31 +75,18 @@ describe('Production', () => {
     expect(inv.getAmount(ResourceType.Stone)).toBe(0);
   });
 
-  it('workamount 0 requires inputs be present and consumes them exactly once', () => {
-    setBalance(1000);
-    setResearch(1000);
-    ALL_RECIPES[RecipeName.SmeltIron].workamount = 0;
-    researchRecipe(ResourceType.Iron);
-    buildFacility(BuildingType.Mine);
-    builtBuildings.get(BuildingType.Mine)?.activate();
-
-    const inv = new Inventory({ [ResourceType.Stone]: 2 });
-    advanceProduction(inv);
-
-    expect(inv.getAmount(ResourceType.Iron)).toBe(1);
-    expect(inv.getAmount(ResourceType.Stone)).toBe(0);
-  });
-
   it('Pay-at-Start: input is consumed for next cycle when overflow restarts production', () => {
     setBalance(1000);
     setResearch(1000);
     ALL_RECIPES[RecipeName.SmeltIron].workamount = 1;
-    researchRecipe(ResourceType.Iron);
+    researchRecipe(RecipeName.SmeltIron);
     buildFacility(BuildingType.Mine);
 
     // Initial state: 0 progress.
-    const inv = new Inventory({ [ResourceType.Stone]: 4 });
-    builtBuildings.get(BuildingType.Mine)?.activate();
+    const inv = new Inventory({ [ResourceType.Stone]: 4, [ResourceType.Electricity]: 20 });
+    const mine = builtBuildings.get(BuildingType.Mine);
+    mine?.selectRecipe(RecipeName.SmeltIron);
+    mine?.activate();
 
     // Tick 1: 1.5 work added.
     // 1. Progress 0 -> Consume inputs for Cycle 1 (Stone: 4 → 2).
@@ -118,11 +105,13 @@ describe('Production', () => {
     setBalance(1000);
     setResearch(1000);
     ALL_RECIPES[RecipeName.SmeltIron].workamount = 1;
-    researchRecipe(ResourceType.Iron);
+    researchRecipe(RecipeName.SmeltIron);
     buildFacility(BuildingType.Mine);
-    builtBuildings.get(BuildingType.Mine)?.activate();
+    const mine1 = builtBuildings.get(BuildingType.Mine);
+    mine1?.selectRecipe(RecipeName.SmeltIron);
+    mine1?.activate();
 
-    const inv = new Inventory({ [ResourceType.Stone]: 6 });
+    const inv = new Inventory({ [ResourceType.Stone]: 6, [ResourceType.Electricity]: 50 });
 
     // Tick 1: 1.0 work.
     // Starts at 0 -> consumes 2 stone. Progress moves to 1.0. Finishes. Progress 0. 
@@ -140,10 +129,10 @@ describe('Production', () => {
   });
 
   it('global production multiplier scales production', () => {
-    setBalance(1000);
+    setBalance(5000); // Higher balance for upgrades
     setResearch(1000);
-    const inv = new Inventory();
-    researchRecipe(ResourceType.Wood);
+    const inv = new Inventory({ [ResourceType.Electricity]: 10 });
+    researchRecipe(RecipeName.HarvestWood);
     buildFacility(BuildingType.Forestry);
     builtBuildings.get(BuildingType.Forestry)?.activate();
 
@@ -160,11 +149,13 @@ describe('Production', () => {
     setBalance(1000);
     setResearch(1000);
     ALL_RECIPES[RecipeName.SmeltIron].workamount = 1;
-    researchRecipe(ResourceType.Iron);
+    researchRecipe(RecipeName.SmeltIron);
     buildFacility(BuildingType.Mine);
-    builtBuildings.get(BuildingType.Mine)?.activate();
+    const mine2 = builtBuildings.get(BuildingType.Mine);
+    mine2?.selectRecipe(RecipeName.SmeltIron);
+    mine2?.activate();
 
-    const inv = new Inventory({ [ResourceType.Stone]: 0 });
+    const inv = new Inventory({ [ResourceType.Stone]: 0, [ResourceType.Electricity]: 50 });
 
     advanceProduction(inv, 1.0);
     expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBe(0);

@@ -5,6 +5,7 @@ import { transaction } from './market/market';
 import { isRecipeNameResearched, resetResearch } from './research';
 import {
   HarvestWood, QuarryStone, SmeltIron, GrowGrain, GrowSugar, BakeBread, BakeCake,
+  ManualPumping, ElectricPumping, MineCoal, CoalPower, SolarPower,
 } from './recipes/recipes';
 
 const UPGRADE_COST_GROWTH = 1.5;
@@ -23,6 +24,8 @@ export const BUILDING_COSTS: Record<BuildingType, number> = {
   [BuildingType.Mine]: 150,
   [BuildingType.Farm]: 60,
   [BuildingType.Bakery]: 300,
+  [BuildingType.WaterWell]: 100,
+  [BuildingType.PowerPlant]: 500,
 };
 
 export const BUILDING_NAMES: Record<BuildingType, string> = {
@@ -31,14 +34,18 @@ export const BUILDING_NAMES: Record<BuildingType, string> = {
   [BuildingType.Mine]: 'Mine',
   [BuildingType.Farm]: 'Farm',
   [BuildingType.Bakery]: 'Bakery',
+  [BuildingType.WaterWell]: 'Water Well',
+  [BuildingType.PowerPlant]: 'Power Plant',
 };
 
 export const BUILDING_RECIPES: Record<BuildingType, Recipe[]> = {
   [BuildingType.Forestry]: [HarvestWood],
   [BuildingType.Quarry]: [QuarryStone],
-  [BuildingType.Mine]: [SmeltIron],
+  [BuildingType.Mine]: [SmeltIron, MineCoal],
   [BuildingType.Farm]: [GrowGrain, GrowSugar],
   [BuildingType.Bakery]: [BakeBread, BakeCake],
+  [BuildingType.WaterWell]: [ManualPumping, ElectricPumping],
+  [BuildingType.PowerPlant]: [CoalPower, SolarPower],
 };
 
 export const builtBuildings: Map<BuildingType, Building> = new Map();
