@@ -1,9 +1,12 @@
+import React from 'react';
 import { Resource } from '../../resources/resource';
-import { ResourceType } from '../../types';
+import { ResourceType, Recipe } from '../../utils/types';
 import { resources } from '../../resources/resourcesRegistry';
-import { formatNumber } from '../../utils';
+import { formatNumber } from '../../utils/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { ALL_RECIPES } from '../../recipes/recipes';
+import { isRecipeResearched } from '../../Building';
 
 interface ResearchModalProps {
       isOpen: boolean;
@@ -20,10 +23,8 @@ export const ResearchModal: React.FC<ResearchModalProps> = ({
 }) => {
       if (!isOpen) return null;
 
-      const resourceEntries = Object.entries(resources) as [ResourceType, Resource][];
-
       // Show all recipes
-      const allRecipes = resourceEntries;
+      const allRecipes = Object.values(ALL_RECIPES);
 
       const handleResearch = (type: ResourceType) => {
             onResearch(type);
@@ -62,11 +63,10 @@ export const ResearchModal: React.FC<ResearchModalProps> = ({
                         {/* Content */}
                         <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {allRecipes.map(([type, resource]) => (
+                                    {allRecipes.map((recipe) => (
                                           <ResearchCard
-                                                key={type}
-                                                type={type}
-                                                resource={resource}
+                                                key={recipe.name}
+                                                recipe={recipe}
                                                 availableResearch={availableResearch}
                                                 onResearch={handleResearch}
                                           />
@@ -79,43 +79,39 @@ export const ResearchModal: React.FC<ResearchModalProps> = ({
 };
 
 interface ResearchCardProps {
-      type: ResourceType;
-      resource: Resource;
+      recipe: Recipe;
       availableResearch: number;
       onResearch: (type: ResourceType) => void;
 }
 
 const ResearchCard: React.FC<ResearchCardProps> = ({
-      type,
-      resource,
+      recipe,
       availableResearch,
       onResearch,
 }) => {
-      const isResearched = resource.recipeResearched;
-      const canAfford = !isResearched && availableResearch >= resource.recipe.researchCost;
+      const isResearched = isRecipeResearched(recipe.outputResource);
+      const canAfford = !isResearched && availableResearch >= recipe.researchCost;
 
       return (
-            <Card className={`border-slate-800 backdrop-blur-sm transition-all duration-200 ${
-                  isResearched
-                        ? 'bg-emerald-950/20 border-emerald-500/30'
-                        : 'bg-slate-950/60 hover:border-blue-500/30'
-            }`}>
+            <Card className={`border-slate-800 backdrop-blur-sm transition-all duration-200 ${isResearched
+                  ? 'bg-emerald-950/20 border-emerald-500/30'
+                  : 'bg-slate-950/60 hover:border-blue-500/30'
+                  }`}>
                   <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                               <div>
                                     <CardTitle className={`text-lg ${isResearched ? 'text-emerald-100' : 'text-slate-100'}`}>
-                                          {resource.recipe.name}
+                                          {recipe.name}
                                     </CardTitle>
                                     <CardDescription className={`text-xs mt-1 ${isResearched ? 'text-emerald-400' : 'text-slate-400'}`}>
                                           {isResearched ? 'Researched' : 'Production Recipe'}
                                     </CardDescription>
                               </div>
-                              <div className={`rounded-full px-3 py-1 text-xs font-medium border ${
-                                    isResearched
-                                          ? 'bg-emerald-950/50 text-emerald-400 border-emerald-500/20'
-                                          : 'bg-blue-950/50 text-blue-400 border-blue-500/20'
-                              }`}>
-                                    {isResearched ? '✓' : `${resource.recipe.researchCost} RP`}
+                              <div className={`rounded-full px-3 py-1 text-xs font-medium border ${isResearched
+                                    ? 'bg-emerald-950/50 text-emerald-400 border-emerald-500/20'
+                                    : 'bg-blue-950/50 text-blue-400 border-blue-500/20'
+                                    }`}>
+                                    {isResearched ? '✓' : `${recipe.researchCost} RP`}
                               </div>
                         </div>
                   </CardHeader>
@@ -124,14 +120,14 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
                         <div>
                               <div className="text-xs font-medium text-slate-400 mb-2">Production Recipe</div>
                               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-                                    {resource.recipe.inputs.length === 0 ? (
+                                    {recipe.inputs.length === 0 ? (
                                           <div className="text-sm text-slate-500 italic">
                                                 Base resource - No inputs required
                                           </div>
                                     ) : (
                                           <div className="space-y-1">
                                                 <div className="text-xs text-slate-500 mb-1">Requires:</div>
-                                                {resource.recipe.inputs.map((input, idx) => (
+                                                {recipe.inputs.map((input, idx) => (
                                                       <div key={idx} className="flex justify-between text-sm">
                                                             <span className="text-slate-400">{input.resource}</span>
                                                             <span className="text-slate-300 font-medium">{input.amount}x</span>
@@ -142,7 +138,7 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
                                     <div className="mt-2 pt-2 border-t border-slate-800 flex justify-between text-sm">
                                           <span className="text-slate-400">Produces:</span>
                                           <span className="text-emerald-400 font-medium">
-                                                {resource.recipe.outputAmount}x {resource.name}
+                                                {recipe.outputAmount}x {resources[recipe.outputResource].name}
                                           </span>
                                     </div>
                               </div>
@@ -150,15 +146,14 @@ const ResearchCard: React.FC<ResearchCardProps> = ({
 
                         {/* Research Button */}
                         <Button
-                              onClick={() => onResearch(type)}
+                              onClick={() => onResearch(recipe.outputResource)}
                               disabled={isResearched || !canAfford}
-                              className={`w-full ${
-                                    isResearched
-                                          ? 'bg-emerald-600 text-white cursor-not-allowed opacity-75'
-                                          : canAfford
+                              className={`w-full ${isResearched
+                                    ? 'bg-emerald-600 text-white cursor-not-allowed opacity-75'
+                                    : canAfford
                                           ? 'bg-blue-600 hover:bg-blue-500 text-white'
                                           : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                              }`}
+                                    }`}
                         >
                               {isResearched ? (
                                     <>

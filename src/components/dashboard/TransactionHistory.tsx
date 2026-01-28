@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../../utils';
+import { formatCurrency } from '../../utils/utils';
 
 interface TransactionLogProps {
       transactions: {

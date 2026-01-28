@@ -35,8 +35,6 @@ export interface Recipe {
       outputResource: ResourceType;
       outputAmount: number;
       workamount: number;
-      active: boolean;
-      workamountCompleted?: number;
       researchCost: number;
 }
 

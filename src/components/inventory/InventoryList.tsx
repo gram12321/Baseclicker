@@ -1,18 +1,11 @@
 import React, { useState } from 'react';
 import { Resource } from '../../resources/resource';
-import { ResourceType } from '../../types';
-import { formatCurrency, formatNumber } from '../../utils';
+import { ResourceType } from '../../utils/types';
+import { formatCurrency, formatNumber } from '../../utils/utils';
 import { Inventory } from '../../inventory';
 import { getLocalMarketSupply, getGlobalMarketSupply } from '../../economy';
-import {
-      Repeat,
-      Box,
-      Globe,
-      Coins,
-      ShoppingCart,
-      Minus
-} from 'lucide-react';
-import { getResourceIcon } from '../../resourceIcons';
+import { Repeat, Box, Globe, Coins, ShoppingCart, Minus } from 'lucide-react';
+import { getResourceIcon } from '../../utils/resourceIcons';
 
 interface InventoryListProps {
       resources: [ResourceType, Resource][];

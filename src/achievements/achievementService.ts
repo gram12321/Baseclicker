@@ -3,7 +3,7 @@ import { ALL_ACHIEVEMENTS } from './constants';
 import { AchievementConfig, AchievementStatus } from './types';
 import { getBalance, getResearch, getResearchers, getGlobalProductionMultiplier } from '../gameState';
 import { Inventory } from '../inventory';
-import { ResourceType } from '../types';
+import { ResourceType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
 
 const STORAGE_KEY = 'baseclicker_achievements';
@@ -18,10 +18,12 @@ class AchievementService {
 
       private load() {
             try {
-                  const saved = localStorage.getItem(STORAGE_KEY);
-                  if (saved) {
-                        const ids = JSON.parse(saved);
-                        this.unlockedIds = new Set(ids);
+                  if (typeof localStorage !== 'undefined') {
+                        const saved = localStorage.getItem(STORAGE_KEY);
+                        if (saved) {
+                              const ids = JSON.parse(saved);
+                              this.unlockedIds = new Set(ids);
+                        }
                   }
                   this.refreshResourceModifiers();
             } catch (e) {
@@ -34,7 +36,9 @@ class AchievementService {
       }
 
       private save() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(this.unlockedIds)));
+            if (typeof localStorage !== 'undefined') {
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(this.unlockedIds)));
+            }
       }
 
       public getStatus(achievementId: string): AchievementStatus {

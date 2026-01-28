@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Resource } from '../resources/resource';
-import { ResourceType } from '../types';
+import { ResourceType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
 import {
       isAutoSellEnabled,

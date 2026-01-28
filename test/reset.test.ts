@@ -8,8 +8,9 @@ describe('Game Reset and Prestige', () => {
 
       it('resets progress but keeps researchers and calculates bonus', async () => {
             const { Inventory } = await import('../src/inventory');
-            const { resources, resetResources } = await import('../src/resources/resourcesRegistry');
-            const { ResourceType } = await import('../src/types');
+            const { resources } = await import('../src/resources/resourcesRegistry');
+            const { ResourceType, BuildingType } = await import('../src/utils/types');
+            const { builtBuildings, buildFacility } = await import('../src/Building');
             const {
                   getBalance,
                   setBalance,
@@ -32,14 +33,20 @@ describe('Game Reset and Prestige', () => {
             setGlobalProductionMultiplier(1.0);
 
             // Build something
-            resources[ResourceType.Wood].productionBuilt = true;
-            resources[ResourceType.Wood].productionUpgradeLevel = 5;
-            resources[ResourceType.Wood].recipe.active = true;
-            resources[ResourceType.Wood].recipe.workamountCompleted = 0.5;
+            buildFacility(BuildingType.Forestry);
+            const forestry = builtBuildings.get(BuildingType.Forestry);
+            if (forestry) {
+                  forestry.productionUpgradeLevel = 5;
+                  forestry.activate(); // Activates current recipe
+                  // (Removed invalid property assignment)
+            }
 
             // Simulate some time
             tick(inv);
             expect(getGameday()).toBe(1);
+
+            // Ensure exact balance for bonus calculation (ignore building costs spent)
+            setBalance(5000000);
 
             // Perform Reset
             resetGame(inv);
@@ -57,10 +64,11 @@ describe('Game Reset and Prestige', () => {
             expect(getGlobalProductionMultiplier()).toBe(6.0);
 
             // Resources should be reset
-            expect(resources[ResourceType.Wood].productionBuilt).toBe(false);
-            expect(resources[ResourceType.Wood].productionUpgradeLevel).toBe(0);
-            expect(resources[ResourceType.Wood].recipe.active).toBe(false);
-            expect(resources[ResourceType.Wood].recipe.workamountCompleted).toBe(0);
+            expect(builtBuildings.has(BuildingType.Forestry)).toBe(false);
+            // Since the building is gone, getting it should return undefined
+            expect(builtBuildings.get(BuildingType.Forestry)).toBeUndefined();
+
+            // ... (removed invalid lines)
       });
 
       it('accumulates multiplier bonus over multiple resets', async () => {

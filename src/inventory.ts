@@ -1,4 +1,4 @@
-import { ResourceType } from './types';
+import { ResourceType } from './utils/types';
 
 export class Inventory {
   private amounts: Record<ResourceType, number>;

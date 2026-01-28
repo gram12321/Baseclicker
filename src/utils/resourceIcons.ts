@@ -1,4 +1,4 @@
-import { ResourceType } from './types';
+import { ResourceType } from './utils/types';
 
 export const RESOURCE_ICONS: Record<ResourceType, string> = {
       [ResourceType.Wood]: '🪵',

@@ -1,45 +1,57 @@
-import { ResourceType, BuildingType } from './types';
-import { Resource } from './resources/resource';
+import { ResourceType, BuildingType, Recipe, RecipeName } from './utils/types';
 import { Inventory } from './inventory';
 import { getBalance, getResearch, addToResearch, getGlobalProductionMultiplier } from './gameState';
 import { transaction } from './economy';
-import { resources } from './resources/resourcesRegistry';
-import { grainRecipe, sugarRecipe } from './resources/resourcesRegistry';
+import {
+  HarvestWood,
+  QuarryStone,
+  SmeltIron,
+  GrowGrain,
+  GrowSugar,
+  ALL_RECIPES
+} from './recipes/recipes';
 
 const UPGRADE_COST_GROWTH = 1.5;
 const UPGRADE_BASE_MULTIPLIER_INCREASE = 0.2;
 const UPGRADE_DIMINISHING_FACTOR = 0.9;
 
+// Track researched recipes globally
+export const researchedRecipes: Set<RecipeName> = new Set();
+
 // Building costs per building type
-const BUILDING_COSTS: Record<BuildingType, number> = {
+export const BUILDING_COSTS: Record<BuildingType, number> = {
   [BuildingType.Forestry]: 50,
   [BuildingType.Quarry]: 75,
   [BuildingType.Mine]: 150,
   [BuildingType.Farm]: 60,
 };
 
-// Building recipes per building type
-export const BUILDING_RECIPES: Record<BuildingType, Recipe | null> = {
-  [BuildingType.Forestry]: resources[ResourceType.Wood].recipe,
-  [BuildingType.Quarry]: resources[ResourceType.Stone].recipe,
-  [BuildingType.Mine]: resources[ResourceType.Iron].recipe,
-  [BuildingType.Farm]: null,
+// Building display names
+export const BUILDING_NAMES: Record<BuildingType, string> = {
+  [BuildingType.Forestry]: 'Forestry',
+  [BuildingType.Quarry]: 'Quarry',
+  [BuildingType.Mine]: 'Mine',
+  [BuildingType.Farm]: 'Farm',
 };
 
-function getRecipesForBuilding(buildingType: BuildingType): any[] {
-  if (buildingType === BuildingType.Farm) {
-    return [grainRecipe, sugarRecipe];
-  }
-  const recipe = BUILDING_RECIPES[buildingType];
-  return recipe ? [recipe] : [];
-}
-
-export function getBuildingCost(buildingType: BuildingType): number {
-  return BUILDING_COSTS[buildingType] || 0;
-}
+// Building recipes per building type
+export const BUILDING_RECIPES: Record<BuildingType, Recipe[]> = {
+  [BuildingType.Forestry]: [HarvestWood],
+  [BuildingType.Quarry]: [QuarryStone],
+  [BuildingType.Mine]: [SmeltIron],
+  [BuildingType.Farm]: [GrowGrain, GrowSugar],
+};
 
 // Map of built buildings
 export const builtBuildings: Map<BuildingType, Building> = new Map();
+
+/**
+ * Reset all built buildings (for game reset)
+ */
+export function resetBuildings(): void {
+  builtBuildings.clear();
+  researchedRecipes.clear();
+}
 
 /**
  * Advance production for all active recipes by
@@ -54,19 +66,26 @@ export function advanceProduction(inventory: Inventory | null, baseProduction = 
   }
 }
 
-export function researchRecipe(resource: ResourceType): boolean {
-  const resourceObj = resources[resource];
-  if (!resourceObj || resourceObj.recipeResearched) return false;
+export function researchRecipe(resourceType: ResourceType): boolean {
+  const recipe = Object.values(ALL_RECIPES).find(r => r.outputResource === resourceType);
 
-  const researchCost = Math.max(0, resourceObj.recipe.researchCost);
+  if (!recipe || researchedRecipes.has(recipe.name)) return false;
+
+  const researchCost = Math.max(0, recipe.researchCost);
 
   if (getResearch() < researchCost) return false;
 
-  resourceObj.recipeResearched = true;
+  researchedRecipes.add(recipe.name);
   if (researchCost > 0) {
     addToResearch(-researchCost);
   }
   return true;
+}
+
+// Utility to check if a resource's recipe is researched
+export function isRecipeResearched(resourceType: ResourceType): boolean {
+  const recipe = Object.values(ALL_RECIPES).find(r => r.outputResource === resourceType);
+  return recipe ? researchedRecipes.has(recipe.name) : false;
 }
 
 export function buildFacility(buildingType: BuildingType): boolean {
@@ -76,16 +95,11 @@ export function buildFacility(buildingType: BuildingType): boolean {
   if (getBalance() < moneyCost) return false;
 
   // Create the building instance
-  const building = new Building(buildingType, getRecipesForBuilding(buildingType), moneyCost);
+  const building = new Building(buildingType, BUILDING_RECIPES[buildingType], moneyCost);
   builtBuildings.set(buildingType, building);
 
   transaction(-moneyCost, `Built ${buildingType} facility`);
   return true;
-}
-
-export function getBuildingUpgradeCost(buildingType: BuildingType): number {
-  const building = builtBuildings.get(buildingType);
-  return building ? building.getUpgradeCost() : 0;
 }
 
 export function upgradeBuilding(
@@ -95,24 +109,19 @@ export function upgradeBuilding(
   return building ? building.upgrade() : { success: false, cost: 0, newMultiplier: 0, upgradeLevel: 0 };
 }
 
-export function getBuildingCount(buildingType: BuildingType): number {
-  return builtBuildings.has(buildingType) ? 1 : 0;
-}
-
-export function getBuildingLevel(buildingType: BuildingType): number {
-  const building = builtBuildings.get(buildingType);
-  return building ? building.productionUpgradeLevel || 0 : 0;
-}
-
 export class Building {
   buildingType: BuildingType;
-  recipes: any[]; // Allow multiple recipes
+  recipes: Recipe[]; // Allow multiple recipes
   currentRecipeIndex: number;
   productionMultiplier: number;
   productionUpgradeLevel: number;
   productionStartCost: number;
 
-  constructor(buildingType: BuildingType, recipes: any[] = [], productionStartCost: number = 0) {
+  // Internal state
+  private isActiveFlag: boolean = false;
+  private recipeProgress: Map<RecipeName, number> = new Map();
+
+  constructor(buildingType: BuildingType, recipes: Recipe[] = [], productionStartCost: number = 0) {
     this.buildingType = buildingType;
     this.recipes = recipes.length > 0 ? recipes : [];
     this.currentRecipeIndex = this.recipes.length > 0 ? 0 : -1; // Default to first recipe if available
@@ -121,7 +130,7 @@ export class Building {
     this.productionStartCost = productionStartCost;
   }
 
-  get currentRecipe(): any {
+  get currentRecipe(): Recipe | null {
     return this.currentRecipeIndex >= 0 ? this.recipes[this.currentRecipeIndex] : null;
   }
 
@@ -131,6 +140,11 @@ export class Building {
 
   selectRecipe(index: number): boolean {
     if (index < 0 || index >= this.recipes.length) return false;
+
+    // Check if the recipe is researched before allowing selection
+    const recipe = this.recipes[index];
+    if (!researchedRecipes.has(recipe.name)) return false;
+
     this.currentRecipeIndex = index;
     return true;
   }
@@ -138,28 +152,32 @@ export class Building {
   // Activate the building
   activate(): boolean {
     if (!this.hasRecipeSelected()) return false;
-    this.currentRecipe.active = true;
+    this.isActiveFlag = true;
     return true;
   }
 
   // Deactivate the building
   deactivate(): boolean {
-    if (this.currentRecipe) {
-      this.currentRecipe.active = false;
-    }
+    this.isActiveFlag = false;
     return true;
   }
 
   // Check if active
   isActive(): boolean {
-    return this.currentRecipe ? Boolean(this.currentRecipe.active) : false;
+    return this.isActiveFlag && this.hasRecipeSelected();
   }
 
   // Set active state
   setActive(active: boolean): boolean {
-    if (!this.hasRecipeSelected()) return false;
-    this.currentRecipe.active = active;
+    if (!this.hasRecipeSelected() && active) return false;
+    this.isActiveFlag = active;
     return true;
+  }
+
+  // Helper to get progress for current recipe
+  getCurrentProgress(): number {
+    const recipe = this.currentRecipe;
+    return recipe ? (this.recipeProgress.get(recipe.name) || 0) : 0;
   }
 
   // Get upgrade cost
@@ -196,25 +214,29 @@ export class Building {
 
   // Advance production for this building
   advance(inventory: Inventory | null, baseProduction = 1): void {
-    if (!inventory || !this.currentRecipe.active) return;
+    if (!inventory || !this.isActive() || !this.currentRecipe) return;
 
     const globalMultiplier = getGlobalProductionMultiplier();
     const amountToAdd = baseProduction * globalMultiplier * this.productionMultiplier;
 
     const recipe = this.currentRecipe;
 
-    // Add work to the recipe's persisted progress field
+    // Get current progress from internal state
+    let currentProgress = this.recipeProgress.get(recipe.name) || 0;
+
+    // Add work to the progress
     if (recipe.workamount > 0) {
-      recipe.workamountCompleted = (recipe.workamountCompleted ?? 0) + amountToAdd;
+      currentProgress += amountToAdd;
     } else {
       // For zero-work recipes, we consider them eligible once per tick
-      recipe.workamountCompleted = recipe.workamountCompleted ?? 0;
+      // progress doesn't really matter but we track it for consistency
+      currentProgress = 0;
     }
 
     // Try to complete productions while we have enough work accumulated.
     while (true) {
       if (recipe.workamount > 0) {
-        if ((recipe.workamountCompleted ?? 0) < recipe.workamount) break;
+        if (currentProgress < recipe.workamount) break;
       } else {
         // workamount === 0: attempt a single production per tick if inputs available
         // proceed to input check below
@@ -240,20 +262,21 @@ export class Building {
       inventory.add(recipe.outputResource, recipe.outputAmount);
 
       if (recipe.workamount > 0) {
-        recipe.workamountCompleted = (recipe.workamountCompleted ?? 0) - recipe.workamount;
+        currentProgress -= recipe.workamount;
         // continue loop to handle overflow
       } else {
         // workamount === 0: produce only once per tick
         break;
       }
     }
+
+    // Save updated progress
+    this.recipeProgress.set(recipe.name, currentProgress);
   }
 
   // Switch to a different recipe
   switchRecipe(index: number): boolean {
-    if (index < 0 || index >= this.recipes.length) return false;
-    this.currentRecipeIndex = index;
-    return true;
+    return this.selectRecipe(index);
   }
 }
 

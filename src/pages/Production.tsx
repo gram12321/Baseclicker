@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { Resource } from '../resources/resource';
-import { ResourceType, BuildingType } from '../types';
+import { ResourceType, BuildingType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
 import {
       builtBuildings,
       upgradeBuilding,
-      getBuildingUpgradeCost,
       buildFacility as buildFacilityAction,
       researchRecipe,
-      getBuildingCount,
-      getBuildingLevel,
       BUILDING_RECIPES,
+      BUILDING_NAMES,
+      isRecipeResearched,
 } from '../Building';
 import { tick, getGameday } from '../game/gametick';
 import { getBalance, getResearch } from '../gameState';
-import { formatCurrency } from '../utils';
+import { ALL_RECIPES } from '../recipes/recipes';
+import { formatCurrency } from '../utils/utils';
 import { Inventory } from '../inventory';
 import { ProductionCard } from '../components/production/ProductionCard';
 import { ResearchModal } from '../components/production/ResearchModal';
@@ -42,8 +42,6 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
             setTimeout(() => setErrorMsg(null), 3000);
       };
 
-
-
       const handleActivate = (buildingType: BuildingType) => {
             const building = builtBuildings.get(buildingType);
             building?.activate();
@@ -60,8 +58,8 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
             if (buildFacilityAction(buildingType)) {
                   refresh();
             } else {
-                  const resource = BUILDING_RECIPES[buildingType]?.output;
-                  showNotification(`Insufficient funds to build ${resources[resource].name} Facility`);
+                  const facilityName = BUILDING_NAMES[buildingType];
+                  showNotification(`Insufficient funds to build ${facilityName}`);
             }
       };
 
@@ -69,8 +67,8 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
             if (upgradeBuilding(buildingType).success) {
                   refresh();
             } else {
-                  const resource = BUILDING_RECIPES[buildingType]?.output;
-                  showNotification(`Insufficient funds to upgrade ${resources[resource].name} Facility`);
+                  const facilityName = BUILDING_NAMES[buildingType];
+                  showNotification(`Insufficient funds to upgrade ${facilityName}`);
             }
       };
 
@@ -87,14 +85,12 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
       const builtFacilities = buildingTypes.filter(bt => builtBuildings.has(bt));
 
       // Check if there are any unresearched recipes
-      const hasUnresearchedRecipes = resourceEntries.some(
-            ([_, resource]) => !resource.recipeResearched
+      const hasUnresearchedRecipes = Object.values(ALL_RECIPES).some(
+            recipe => !isRecipeResearched(recipe.outputResource)
       );
 
-      // Check if there are any researched but not built facilities
-      const hasBuildableFacilities = buildingTypes.some(
-            bt => !builtBuildings.has(bt) && resources[BUILDING_RECIPES[bt]?.output]?.recipeResearched
-      );
+      // Check if there are any not-built facilities (no research requirement)
+      const hasBuildableFacilities = buildingTypes.some(bt => !builtBuildings.has(bt));
 
       return (
             <div className="space-y-6">
@@ -237,9 +233,9 @@ export default function Production({ inventoryRef, refresh }: ProductionProps) {
                                                 onDeactivate={handleDeactivate}
                                                 onUpgrade={handleUpgradeProduction}
                                                 onBuild={handleBuildProduction}
-                                                upgradeCost={getBuildingUpgradeCost(buildingType)}
+                                                upgradeCost={builtBuildings.get(buildingType)?.getUpgradeCost() ?? 0}
                                                 buildCost={0}
-                                                level={getBuildingLevel(buildingType)}
+                                                level={builtBuildings.get(buildingType)?.productionUpgradeLevel ?? 0}
                                           />
                                     ))
                               )}

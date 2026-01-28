@@ -1,7 +1,7 @@
 import { getBalance } from '../gameState';
 import { getGameday } from '../game/gametick';
 import { getTransactionLog } from '../economy';
-import { formatCurrency } from '../utils';
+import { formatCurrency } from '../utils/utils';
 
 // Components
 import { TransactionHistory } from '../components/dashboard/TransactionHistory';

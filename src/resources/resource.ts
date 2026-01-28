@@ -1,4 +1,4 @@
-import { ResourceType, Recipe, RecipeInput } from '../types';
+import { ResourceType, Recipe, RecipeInput } from '../utils/types';
 
 
 export class Resource {
@@ -8,9 +8,7 @@ export class Resource {
   localinitsupply: number;
   globalbenchmarksupply: number;
   globalinitsupply: number;
-  recipeResearched: boolean;
   priceModifier: number;
-  recipe: Recipe;
 
   constructor(
     type: ResourceType,
@@ -18,9 +16,7 @@ export class Resource {
     localbenchmarksupply: number,
     localinitsupply: number,
     globalbenchmarksupply: number,
-    globalinitsupply: number,
-    recipe: Recipe,
-    recipeResearched: boolean = false
+    globalinitsupply: number
   ) {
     this.type = type;
     this.name = name;
@@ -28,22 +24,11 @@ export class Resource {
     this.localinitsupply = localinitsupply;
     this.globalbenchmarksupply = globalbenchmarksupply;
     this.globalinitsupply = globalinitsupply;
-    this.recipeResearched = recipeResearched;
     this.priceModifier = 1.0;
-    // Ensure runtime progress field exists on the recipe for persistence
-    if (recipe.workamountCompleted === undefined) {
-      recipe.workamountCompleted = 0;
-    }
-    this.recipe = recipe;
   }
 
   reset(): void {
-    this.recipeResearched = false;
     // Note: priceModifier is specifically NOT reset here as per requirements
-    if (this.recipe) {
-      this.recipe.active = false;
-      this.recipe.workamountCompleted = 0;
-    }
   }
 
   // Calculate current local price based on supply vs. local benchmark supply.

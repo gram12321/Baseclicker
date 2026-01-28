@@ -3,7 +3,8 @@ import { resetResources } from '../resources/resourcesRegistry';
 import { resetEconomy, transaction } from '../economy';
 import { Inventory } from '../inventory';
 import { resetGameday } from './gametick';
-import { formatNumber } from '../utils';
+import { formatNumber } from '../utils/utils';
+import { resetBuildings } from '../Building';
 
 /**
  * Resets the entire game state to initial values.
@@ -16,6 +17,7 @@ import { formatNumber } from '../utils';
 export function resetGame(inventory: Inventory): void {
       const bonus = resetGameState();
       resetResources();
+      resetBuildings();
       resetEconomy();
       resetGameday();
       inventory.clear();

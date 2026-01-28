@@ -1,9 +1,9 @@
 // economy.ts
 import { Inventory } from './inventory';
 import { Resource } from './resources/resource';
-import { ResourceType } from './types';
+import { ResourceType } from './utils/types';
 import { resources } from './resources/resourcesRegistry';
-import { formatCurrency } from './utils';
+import { formatCurrency } from './utils/utils';
 import { addToBalance } from './gameState';
 
 const transactionLog: { amount: number; description: string; newBalance: number; timestamp: number }[] = [];

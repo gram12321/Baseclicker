@@ -1,16 +1,15 @@
-import { Resource } from '../../resources/resource';
-import { ResourceType } from '../../types';
-import { resources } from '../../resources/resourcesRegistry';
-import { formatNumber } from '../../utils';
+import React from 'react';
+import { BuildingType } from '../../utils/types';
+import { BUILDING_RECIPES, BUILDING_COSTS, BUILDING_NAMES, builtBuildings, isRecipeResearched } from '../../Building';
+import { formatNumber } from '../../utils/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { getBuildingCount, getBuildingCost } from '../../Building';
-import { getResourceIcon } from '../../resourceIcons';
+import { getResourceIcon } from '../../utils/resourceIcons';
 
 interface BuildBuildingsModalProps {
       isOpen: boolean;
       onClose: () => void;
-      onBuild: (type: ResourceType) => void;
+      onBuild: (type: BuildingType) => void;
       availableBalance: number;
 }
 
@@ -22,12 +21,9 @@ export const BuildBuildingsModal: React.FC<BuildBuildingsModalProps> = ({
 }) => {
       if (!isOpen) return null;
 
-      const resourceEntries = Object.entries(resources) as [ResourceType, Resource][];
+      const buildingTypes = Object.values(BuildingType);
 
-      // Show all production facilities
-      const allFacilities = resourceEntries;
-
-      const handleBuild = (type: ResourceType) => {
+      const handleBuild = (type: BuildingType) => {
             onBuild(type);
       };
 
@@ -64,11 +60,10 @@ export const BuildBuildingsModal: React.FC<BuildBuildingsModalProps> = ({
                         {/* Content */}
                         <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {allFacilities.map(([type, resource]) => (
+                                    {buildingTypes.map((type) => (
                                           <BuildCard
                                                 key={type}
                                                 type={type}
-                                                resource={resource}
                                                 availableBalance={availableBalance}
                                                 onBuild={handleBuild}
                                           />
@@ -81,78 +76,106 @@ export const BuildBuildingsModal: React.FC<BuildBuildingsModalProps> = ({
 };
 
 interface BuildCardProps {
-      type: ResourceType;
-      resource: Resource;
+      type: BuildingType;
       availableBalance: number;
-      onBuild: (type: ResourceType) => void;
+      onBuild: (type: BuildingType) => void;
 }
 
 const BuildCard: React.FC<BuildCardProps> = ({
       type,
-      resource,
       availableBalance,
       onBuild,
 }) => {
-      const canAfford = availableBalance >= getBuildingCost(type);
-      const isBuilt = getBuildingCount(type) > 0;
-      const isResearched = resource.recipeResearched;
+      const canAfford = availableBalance >= BUILDING_COSTS[type];
+      const isBuilt = builtBuildings.has(type);
+
+      const buildingName = BUILDING_NAMES[type];
+      const recipes = BUILDING_RECIPES[type];
+
+      // Filter to only show researched recipes
+      const researchedRecipesList = recipes.filter(r => isRecipeResearched(r.outputResource));
+
+      // Only show detailed stats if there is exactly one recipe type
+      const singleRecipe = recipes.length === 1 ? recipes[0] : null;
 
       return (
             <Card className="border-slate-800 bg-slate-950/60 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-200">
                   <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                               <div>
-                                    <CardTitle className="text-slate-100 text-lg">{resource.name}</CardTitle>
+                                    <CardTitle className="text-slate-100 text-lg">{buildingName}</CardTitle>
                                     <CardDescription className="text-slate-400 text-xs mt-1">
                                           Production Facility
                                     </CardDescription>
                               </div>
                               <div className="rounded-full bg-emerald-950/50 px-3 py-1 text-xs font-medium text-emerald-400 border border-emerald-500/20">
-                                    ${getBuildingCost(type)}
+                                    ${BUILDING_COSTS[type]}
                               </div>
                         </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                         {/* Recipe Information */}
                         <div>
-                              <div className="text-xs font-medium text-slate-400 mb-2">Available Recipes</div>
+                              <div className="text-xs font-medium text-slate-400 mb-2">
+                                    {recipes.length > 1 ? 'Available Recipes' : 'Recipe'}
+                              </div>
                               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-                                    <div className="text-sm text-slate-300 font-medium mb-2">{resource.recipe.name}</div>
-                                    {resource.recipe.inputs.length === 0 ? (
-                                          <div className="text-sm text-slate-500 italic">
-                                                Base resource - No inputs required
-                                          </div>
-                                    ) : (
-                                          <div className="space-y-1">
-                                                <div className="text-xs text-slate-500 mb-1">Requires:</div>
-                                                {resource.recipe.inputs.map((input, idx) => (
-                                                      <div key={idx} className="flex justify-between text-sm">
-                                                            <span className="text-slate-400">{getResourceIcon(input.resource as ResourceType)} {input.resource}</span>
-                                                            <span className="text-slate-300 font-medium">{input.amount}x</span>
+                                    {singleRecipe ? (
+                                          <>
+                                                <div className="text-sm text-slate-300 font-medium mb-2">{singleRecipe.name}</div>
+                                                {singleRecipe.inputs.length === 0 ? (
+                                                      <div className="text-sm text-slate-500 italic">
+                                                            Base resource - No inputs required
                                                       </div>
-                                                ))}
+                                                ) : (
+                                                      <div className="space-y-1">
+                                                            <div className="text-xs text-slate-500 mb-1">Requires:</div>
+                                                            {singleRecipe.inputs.map((input, idx) => (
+                                                                  <div key={idx} className="flex justify-between text-sm">
+                                                                        <span className="text-slate-400">{getResourceIcon(input.resource)} {input.resource}</span>
+                                                                        <span className="text-slate-300 font-medium">{input.amount}x</span>
+                                                                  </div>
+                                                            ))}
+                                                      </div>
+                                                )}
+                                                <div className="mt-2 pt-2 border-t border-slate-800 space-y-1">
+                                                      <div className="flex justify-between text-sm">
+                                                            <span className="text-slate-400">Produces:</span>
+                                                            <span className="text-emerald-400 font-medium">
+                                                                  {singleRecipe.outputAmount}x {getResourceIcon(singleRecipe.outputResource)} {singleRecipe.outputResource}
+                                                            </span>
+                                                      </div>
+                                                      <div className="flex justify-between text-sm">
+                                                            <span className="text-slate-400">Work Required:</span>
+                                                            <span className="text-slate-300 font-medium">{singleRecipe.workamount} ticks</span>
+                                                      </div>
+                                                </div>
+                                          </>
+                                    ) : (
+                                          <div className="space-y-2">
+                                                <div className="text-sm text-slate-400 italic mb-2">
+                                                      Versatile facility with multiple specialized recipes.
+                                                </div>
+                                                {researchedRecipesList.length > 0 && (
+                                                      <div className="text-xs text-slate-500">
+                                                            Researched: {researchedRecipesList.map(r => r.name).join(', ')}
+                                                      </div>
+                                                )}
+                                                {researchedRecipesList.length === 0 && (
+                                                      <div className="text-xs text-amber-400">
+                                                            Research recipes to enable production
+                                                      </div>
+                                                )}
                                           </div>
                                     )}
-                                    <div className="mt-2 pt-2 border-t border-slate-800 space-y-1">
-                                          <div className="flex justify-between text-sm">
-                                                <span className="text-slate-400">Produces:</span>
-                                                <span className="text-emerald-400 font-medium">
-                                                      {resource.recipe.outputAmount}x {getResourceIcon(resource.recipe.outputResource)} {resource.recipe.outputResource}
-                                                </span>
-                                          </div>
-                                          <div className="flex justify-between text-sm">
-                                                <span className="text-slate-400">Work Required:</span>
-                                                <span className="text-slate-300 font-medium">{resource.recipe.workamount} ticks</span>
-                                          </div>
-                                    </div>
                               </div>
                         </div>
 
                         {/* Build Button */}
                         <Button
                               onClick={() => onBuild(type)}
-                              disabled={!canAfford || !isResearched || isBuilt}
-                              className={`w-full ${!canAfford || !isResearched || isBuilt
+                              disabled={!canAfford || isBuilt}
+                              className={`w-full ${!canAfford || isBuilt
                                     ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                                     : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                                     }`}
@@ -174,24 +197,6 @@ const BuildCard: React.FC<BuildCardProps> = ({
                                                 <polyline points="20 6 9 17 4 12" />
                                           </svg>
                                           Already Built
-                                    </>
-                              ) : !isResearched ? (
-                                    <>
-                                          <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="16"
-                                                height="16"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                className="mr-2"
-                                          >
-                                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                          </svg>
-                                          Research Recipe First
                                     </>
                               ) : canAfford ? (
                                     <>

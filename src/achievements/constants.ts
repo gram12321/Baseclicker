@@ -1,7 +1,7 @@
 
-import { AchievementConfig, AchievementCategory, AchievementLevel } from './types';
-import { ResourceType } from '../types';
-import { RESOURCE_ICONS } from '../resourceIcons';
+import { AchievementConfig, AchievementCategory } from './types';
+import { ResourceType } from '../utils/types';
+import { RESOURCE_ICONS } from '../utils/resourceIcons';
 
 function toRoman(num: number): string {
       if (num > 10) return num.toString();

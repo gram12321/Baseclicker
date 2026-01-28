@@ -4,7 +4,7 @@ import { advanceProduction } from '../Building';
 import { Inventory } from '../inventory';
 import { autoSellResource } from '../economy';
 import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch } from '../gameState';
-import { ResourceType } from '../types';
+import { ResourceType } from '../utils/types';
 import { achievementService } from '../achievements/achievementService';
 
 let gameday = 0;

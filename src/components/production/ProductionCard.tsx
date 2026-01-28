@@ -1,9 +1,11 @@
+import React, { useState, useEffect } from 'react';
 import { Resource } from '../../resources/resource';
-import { ResourceType, BuildingType } from '../../types';
-import { formatCurrency } from '../../utils';
-import { builtBuildings, Building, BUILDING_RECIPES } from '../../Building';
+import { ResourceType, BuildingType } from '../../utils/types';
+import { formatCurrency } from '../../utils/utils';
+import { builtBuildings, Building, BUILDING_RECIPES, BUILDING_NAMES, isRecipeResearched } from '../../Building';
 import { resources } from '../../resources/resourcesRegistry';
-import { getResourceIcon } from '../../resourceIcons';
+import { getResourceIcon } from '../../utils/resourceIcons';
+import { Button } from '../ui/button';
 
 interface ProductionCardProps {
       buildingType: BuildingType;
@@ -47,19 +49,18 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
       const currentRecipe = building?.currentRecipe;
       const resource = currentRecipe ? resources[currentRecipe.outputResource] : null;
 
-      const progress = currentRecipe?.workamount
-            ? (currentRecipe.workamountCompleted ?? 0) / currentRecipe.workamount
+      const progress = (currentRecipe?.workamount && building)
+            ? building.getCurrentProgress() / currentRecipe.workamount
             : 0;
 
-      const outputResource = BUILDING_RECIPES[buildingType]?.output;
-      const icon = getResourceIcon(outputResource);
+      const buildingName = BUILDING_NAMES[buildingType];
 
       if (!isBuilt) {
             return (
                   <div className="relative flex flex-col justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-5">
                         <div>
                               <div className="flex items-center gap-2 text-lg font-bold text-slate-100">
-                                    {icon} {resources[outputResource].name} Facility
+                                    {buildingName}
                               </div>
                               <div className="text-sm text-slate-400">Not built yet</div>
                         </div>
@@ -81,7 +82,7 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
                         <div className="flex items-start justify-between">
                               <div>
                                     <div className="flex items-center gap-2 text-lg font-bold text-slate-100">
-                                          {icon} {resources[outputResource].name} Facility
+                                          {buildingName}
                                     </div>
                                     <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider">
                                           <span className={isActive ? 'text-emerald-400' : 'text-amber-400'}>
@@ -137,16 +138,22 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
                                     )}
                                     {building && building.recipes.length > 1 && (
                                           <div className="mt-2 space-y-1">
-                                                {building.recipes.map((recipe, index) => (
-                                                      <Button
-                                                            key={index}
-                                                            onClick={() => handleSelectRecipe(index)}
-                                                            size="sm"
-                                                            className={`w-full ${building.currentRecipeIndex === index ? 'bg-emerald-600' : 'bg-slate-700 hover:bg-slate-600'} text-slate-300`}
-                                                      >
-                                                            {resources[recipe.outputResource].name}
-                                                      </Button>
-                                                ))}
+                                                {building.recipes
+                                                      .filter((recipe, index) => isRecipeResearched(recipe.outputResource))
+                                                      .map((recipe, index) => {
+                                                            // Find the actual index in the original recipes array
+                                                            const actualIndex = building.recipes.indexOf(recipe);
+                                                            return (
+                                                                  <Button
+                                                                        key={actualIndex}
+                                                                        onClick={() => handleSelectRecipe(actualIndex)}
+                                                                        size="sm"
+                                                                        className={`w-full ${building.currentRecipeIndex === actualIndex ? 'bg-emerald-600' : 'bg-slate-700 hover:bg-slate-600'} text-slate-300`}
+                                                                  >
+                                                                        {resources[recipe.outputResource].name}
+                                                                  </Button>
+                                                            );
+                                                      })}
                                           </div>
                                     )}
                               </div>
@@ -155,7 +162,7 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
 
                   <div className="mt-6">
                         {/* Progress Bar */}
-                        {currentRecipe?.workamount > 0 && (
+                        {(currentRecipe?.workamount ?? 0) > 0 && (
                               <div className="mb-4">
                                     <div className="flex justify-between text-[10px] text-slate-500 mb-1">
                                           <span>Production Progress</span>
@@ -183,11 +190,10 @@ export const ProductionCard: React.FC<ProductionCardProps> = ({
                                     <Button
                                           onClick={() => onActivate(buildingType)}
                                           disabled={!recipeSelected}
-                                          className={`${
-                                                recipeSelected
-                                                      ? 'bg-emerald-600 hover:bg-emerald-500 text-slate-100'
-                                                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                                          }`}
+                                          className={`${recipeSelected
+                                                ? 'bg-emerald-600 hover:bg-emerald-500 text-slate-100'
+                                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                                }`}
                                     >
                                           {recipeSelected ? 'Start' : 'Select Recipe'}
                                     </Button>

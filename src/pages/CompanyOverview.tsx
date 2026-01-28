@@ -9,11 +9,11 @@ import {
       getGlobalProductionMultiplier,
 } from '../gameState';
 import { getGameday } from '../game/gametick';
-import { formatCurrency, formatNumber } from '../utils';
+import { formatCurrency, formatNumber } from '../utils/utils';
 import { Resource } from '../resources/resource';
-import { ResourceType } from '../types';
+import { ResourceType } from '../utils/types';
 import { resources } from '../resources/resourcesRegistry';
-import { builtBuildings, getBuildingCount, getBuildingLevel } from '../Building';
+import { builtBuildings } from '../Building';
 import { StatCard } from '../components/dashboard/StatCard';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -166,7 +166,7 @@ export default function CompanyOverview({ inventoryRef, refresh }: CompanyOvervi
                                                             <div>
                                                                   <div className="font-medium text-slate-100">{buildingType}</div>
                                                                   <div className="text-xs text-slate-500">
-                                                                        Level {building.level} • {resource ? resource.name : 'No recipe'}
+                                                                        Level {building.productionUpgradeLevel} • {resource ? resource.name : 'No recipe'}
                                                                   </div>
                                                             </div>
                                                       </div>

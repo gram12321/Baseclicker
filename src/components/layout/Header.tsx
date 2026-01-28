@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../ui/button';
-import { formatCurrency } from '../../utils';
+import { formatCurrency } from '../../utils/utils';
 import { Coins, Calendar, ChevronRight } from 'lucide-react';
 
 interface HeaderProps {
