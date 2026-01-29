@@ -22,16 +22,27 @@ export const QuarryStone: Recipe = {
       researchCost: 10,
 };
 
-export const SmeltIron: Recipe = {
-      name: RecipeName.SmeltIron,
+export const MineIronOre: Recipe = {
+      name: RecipeName.MineIronOre,
       inputs: [
-            { resource: ResourceType.Stone, amount: 2 },
-            { resource: ResourceType.Electricity, amount: 5 },
+            { resource: ResourceType.Electricity, amount: 3 },
+      ],
+      outputResource: ResourceType.OreBatch,
+      outputAmount: 1,
+      workamount: 3,
+      researchCost: 50,
+};
+
+export const SmeltOreBatch: Recipe = {
+      name: RecipeName.SmeltOreBatch,
+      inputs: [
+            { resource: ResourceType.OreBatch, amount: 1 },
+            { resource: ResourceType.Coal, amount: 1 },
       ],
       outputResource: ResourceType.Iron,
       outputAmount: 1,
       workamount: 2,
-      researchCost: 50,
+      researchCost: 100,
 };
 
 export const GrowGrain: Recipe = {
@@ -139,7 +150,8 @@ export const SolarPower: Recipe = {
 export const ALL_RECIPES = {
       [RecipeName.HarvestWood]: HarvestWood,
       [RecipeName.QuarryStone]: QuarryStone,
-      [RecipeName.SmeltIron]: SmeltIron,
+      [RecipeName.MineIronOre]: MineIronOre,
+      [RecipeName.SmeltOreBatch]: SmeltOreBatch,
       [RecipeName.GrowGrain]: GrowGrain,
       [RecipeName.GrowSugar]: GrowSugar,
       [RecipeName.BakeBread]: BakeBread,

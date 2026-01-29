@@ -11,9 +11,6 @@ import { formatCurrency, formatNumber } from '../utils/utils';
 import { getResourceIcon } from '../utils/resourceIcons';
 import { builtBuildings, Building, BUILDING_RECIPES, BUILDING_NAMES, upgradeBuilding, buildFacility, BUILDING_COSTS } from '../lib/Building';
 import { isRecipeResearched } from '../lib/research';
-
-
-// Icons
 import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft, Settings, Hammer, Zap, Play, Square, ArrowUpCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 type SortKey = 'name' | 'localPrice' | 'globalPrice' | 'localQuality' | 'globalQuality' | 'localSupply' | 'globalSupply' | 'amount';
@@ -334,7 +331,7 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                                   {/* Inventory */}
                                                                   <td className="px-4 py-4 text-right">
                                                                         <div className="text-lg font-mono font-semibold text-emerald-400">
-                                                                              {formatNumber(amount, { decimals: 0 })}
+                                                                              {formatNumber(amount, { decimals: 2, forceDecimals: true })}
                                                                         </div>
                                                                         <div className="text-[10px] text-slate-500 font-mono italic">
                                                                               Q: {formatNumber(inventoryQuality, { decimals: 2, forceDecimals: true })}

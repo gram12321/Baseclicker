@@ -1,12 +1,14 @@
-import { BuildingType, Recipe, RecipeName } from '../utils/types';
+import { BuildingType, Recipe, RecipeName, ResourceType } from '../utils/types';
 import { Inventory } from './inventory';
 import { getBalance, getGlobalProductionMultiplier } from './game/gameState';
 import { transaction } from './market/market';
 import { isRecipeNameResearched, resetResearch } from './research';
 import {
-  HarvestWood, QuarryStone, SmeltIron, GrowGrain, GrowSugar, BakeBread, BakeCake,
-  ManualPumping, ElectricPumping, MineCoal, CoalPower, SolarPower,
+  HarvestWood, QuarryStone, MineIronOre, SmeltOreBatch, GrowGrain, GrowSugar, BakeBread, BakeCake,
+  ManualPumping, ElectricPumping, MineCoal, CoalPower, SolarPower
 } from './recipes/recipes';
+import { produceOreBatch } from './resources/batchHelpers';
+import { getTechLevel } from './game/technology';
 
 const UPGRADE_COST_GROWTH = 1.5;
 const UPGRADE_BASE_MULTIPLIER_INCREASE = 0.2;
@@ -16,7 +18,7 @@ const UPGRADE_DIMINISHING_FACTOR = 0.9;
 const QUALITY_UPGRADE_COST_GROWTH = 1.5;
 const QUALITY_DIMINISHING_STEEPNESS = 0.15; // Controls how quickly diminishing returns kick in
 
-import { getTechLevel } from './game/technology';
+
 
 export const BUILDING_COSTS: Record<BuildingType, number> = {
   [BuildingType.Forestry]: 50,
@@ -26,6 +28,7 @@ export const BUILDING_COSTS: Record<BuildingType, number> = {
   [BuildingType.Bakery]: 300,
   [BuildingType.WaterWell]: 100,
   [BuildingType.PowerPlant]: 500,
+  [BuildingType.Smelter]: 200,
 };
 
 export const BUILDING_NAMES: Record<BuildingType, string> = {
@@ -36,16 +39,18 @@ export const BUILDING_NAMES: Record<BuildingType, string> = {
   [BuildingType.Bakery]: 'Bakery',
   [BuildingType.WaterWell]: 'Water Well',
   [BuildingType.PowerPlant]: 'Power Plant',
+  [BuildingType.Smelter]: 'Smelter',
 };
 
 export const BUILDING_RECIPES: Record<BuildingType, Recipe[]> = {
   [BuildingType.Forestry]: [HarvestWood],
   [BuildingType.Quarry]: [QuarryStone],
-  [BuildingType.Mine]: [SmeltIron, MineCoal],
+  [BuildingType.Mine]: [MineIronOre, MineCoal],
   [BuildingType.Farm]: [GrowGrain, GrowSugar],
   [BuildingType.Bakery]: [BakeBread, BakeCake],
   [BuildingType.WaterWell]: [ManualPumping, ElectricPumping],
   [BuildingType.PowerPlant]: [CoalPower, SolarPower],
+  [BuildingType.Smelter]: [SmeltOreBatch],
 };
 
 export const builtBuildings: Map<BuildingType, Building> = new Map();
@@ -102,6 +107,7 @@ export class Building {
   private isActiveFlag: boolean = false;
   private recipeProgress: Map<RecipeName, number> = new Map();
   private currentCycleInputQuality: number = 1.0;
+  private currentBatchComposition: any = null; // Stores batch composition for current cycle
 
   constructor(buildingType: BuildingType, recipes: Recipe[] = [], productionStartCost: number = 0) {
     this.buildingType = buildingType;
@@ -299,9 +305,29 @@ export class Building {
           if (recipe.inputs.every(i => inventory.has(i.resource, i.amount))) {
             // Calculate average input quality for this cycle
             let totalQuality = 0;
+            this.currentBatchComposition = null; // Reset batch composition
+
             recipe.inputs.forEach(i => {
-              totalQuality += inventory.getQuality(i.resource);
-              inventory.remove(i.resource, i.amount);
+              // Special handling for OreBatch - capture composition and use BATCH quality
+              if (i.resource === ResourceType.OreBatch) {
+                const batch = inventory.removeBatch(i.resource, i.amount);
+                if (batch) {
+                  // Use the specific quality of the batch we just consumed
+                  totalQuality += batch.quality;
+
+                  if (batch.composition) {
+                    this.currentBatchComposition = batch.composition;
+                  }
+                  console.log(`[Q-DEBUG] Consumed OreBatch with Q${batch.quality}`);
+                } else {
+                  // Fallback (shouldn't happen due to check above)
+                  totalQuality += inventory.getQuality(i.resource);
+                }
+              } else {
+                // For normal resources, use the average inventory quality
+                totalQuality += inventory.getQuality(i.resource);
+                inventory.remove(i.resource, i.amount);
+              }
             });
             this.currentCycleInputQuality = totalQuality / recipe.inputs.length;
             // Cycle started!
@@ -330,15 +356,51 @@ export class Building {
         // Capped by:
         //   1. Tech Level (hard cap - cannot exceed your technology)
         //   2. Input Quality + 1 (can only improve inputs by +1 max)
-        const techLevel = getTechLevel(recipe.outputResource);
         const inputQualityCap = this.currentCycleInputQuality + 1;
-        const outputQuality = Math.min(
+
+        // Default quality calculation (for primary output)
+        const techLevel = getTechLevel(recipe.outputResource);
+        const baseOutputQuality = Math.min(
           this.productionQuality,    // What the building can produce
           techLevel,                 // Tech cap (hard limit)
           inputQualityCap            // Input cap (can improve by +1 max)
         );
 
-        inventory.add(recipe.outputResource, recipe.outputAmount, outputQuality);
+        // Special handling for OreBatch production (mining)
+        if (recipe.outputResource === ResourceType.OreBatch) {
+          console.log(`[Q-DEBUG] Mining OreBatch Q${baseOutputQuality.toFixed(2)} (Tech: ${techLevel})`);
+          produceOreBatch(inventory, recipe.name, recipe.outputAmount, baseOutputQuality);
+        }
+        // Special handling for smelting (consuming OreBatch)
+        else if (recipe.inputs.some(i => i.resource === ResourceType.OreBatch)) {
+          // Use the batch composition that was captured during input consumption
+          if (this.currentBatchComposition && this.currentBatchComposition.yields) {
+            // Produce outputs based on batch composition with SPECIFIC quality per resource
+            for (const [resourceType, yieldAmount] of Object.entries(this.currentBatchComposition.yields)) {
+              const resType = resourceType as ResourceType;
+
+              // Calculate specific quality for this output resource based on its OWN tech level
+              const resTechLevel = getTechLevel(resType);
+              const resQuality = Math.min(
+                this.productionQuality,
+                resTechLevel,
+                inputQualityCap
+              );
+
+              console.log(`[Q-DEBUG] Smelting ${resType}: Q${resQuality.toFixed(2)} (Tech: ${resTechLevel}, InputCap: ${inputQualityCap.toFixed(2)})`);
+
+              inventory.add(resType, yieldAmount as number, resQuality);
+            }
+          } else {
+            // Fallback
+            inventory.add(recipe.outputResource, recipe.outputAmount, baseOutputQuality);
+          }
+        }
+        // Normal production
+        else {
+          inventory.add(recipe.outputResource, recipe.outputAmount, baseOutputQuality);
+        }
+
         progress = 0;
 
         // If we have overflow work, loop back to:

@@ -9,6 +9,8 @@ export enum ResourceType {
       Water = 'Water',
       Electricity = 'Electricity',
       Coal = 'Coal',
+      OreBatch = 'Ore Batch',
+      Slag = 'Slag',
 }
 
 export enum BuildingType {
@@ -19,12 +21,14 @@ export enum BuildingType {
       Bakery = 'Bakery',
       WaterWell = 'Water Well',
       PowerPlant = 'Power Plant',
+      Smelter = 'Smelter',
 }
 
 export enum RecipeName {
       HarvestWood = 'Harvest Wood',
       QuarryStone = 'Quarry Stone',
-      SmeltIron = 'Smelt Iron',
+      MineIronOre = 'Mine Iron Ore',
+      SmeltOreBatch = 'Smelt Ore Batch',
       GrowGrain = 'Grow Grain',
       GrowSugar = 'Grow Sugar',
       BakeBread = 'Bake Bread',
@@ -37,6 +41,11 @@ export enum RecipeName {
 }
 
 export interface RecipeInput {
+      resource: ResourceType;
+      amount: number;
+}
+
+export interface RecipeOutput {
       resource: ResourceType;
       amount: number;
 }
@@ -55,4 +64,17 @@ export interface Player {
       research: number;
       researchers: number;
       productionMultiplier: number;
+}
+
+export interface BatchComposition {
+      oreType: string;  // e.g., 'IronOre', 'CopperOre'
+      yields: Partial<Record<ResourceType, number>>;  // e.g., { Iron: 1.05, Slag: 0.48 }
+}
+
+export interface ResourceBatch {
+      batchId: string;
+      resourceType: ResourceType;
+      amount: number;
+      quality: number;
+      composition?: BatchComposition;
 }

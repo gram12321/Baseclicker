@@ -13,6 +13,8 @@ export const resources = {
   [ResourceType.Water]: new Resource(ResourceType.Water, 'Water', 10000, 100000, 100000, 1000000),
   [ResourceType.Electricity]: new Resource(ResourceType.Electricity, 'Electricity', 10000, 50000, 100000, 500000),
   [ResourceType.Coal]: new Resource(ResourceType.Coal, 'Coal', 10000, 5000, 100000, 50000),
+  [ResourceType.OreBatch]: new Resource(ResourceType.OreBatch, 'Ore Batch', 10000, 1000, 100000, 10000),
+  [ResourceType.Slag]: new Resource(ResourceType.Slag, 'Slag', 10000, 5000, 100000, 50000),
 };
 
 export function resetResources(): void {

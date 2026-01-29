@@ -45,7 +45,7 @@ describe('Production', () => {
     ALL_RECIPES = recipesModule.ALL_RECIPES;
 
     // Reset recipe values that might be modified by tests
-    ALL_RECIPES[RecipeName.SmeltIron].workamount = 2;
+    ALL_RECIPES[RecipeName.SmeltOreBatch].workamount = 2;
   });
 
   // Helper to set private recipe progress for testing

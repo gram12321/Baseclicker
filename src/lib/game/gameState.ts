@@ -3,8 +3,8 @@ import { ResourceType, Player } from '../../utils/types';
 // Global game state: player
 
 const player: Player = {
-	balance: 0,
-	research: 0,
+	balance: 10000,
+	research: 1000,
 	researchers: 0,
 	productionMultiplier: 1.0,
 };
