@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Resource } from '../lib/resources/resource';
 import { ResourceType, BuildingType, RecipeName } from '../utils/types';
 import { resources } from '../lib/resources/resourcesRegistry';
-import { isAutoSellEnabled, setAutoSellEnabled, setAutoSellAmount, getAutoSellAmount, getAutoSellMinKeep, setAutoSellMinKeep } from '../lib/game/gameState';
-import { sellResource as sellResourceEconomy } from '../lib/market/market';
+import { isAutoSellEnabled, setAutoSellEnabled, setAutoSellAmount, getAutoSellAmount, getAutoSellMinKeep, setAutoSellMinKeep, getBalance, isAutoBuyEnabled, setAutoBuyEnabled, getAutoBuyMaxPrice, setAutoBuyMaxPrice } from '../lib/game/gameState';
+import { sellResource as sellResourceEconomy, buyResource as buyResourceEconomy } from '../lib/market/market';
 import { Inventory } from '../lib/inventory';
 import { getLocalMarketSupply, getGlobalMarketSupply, getLocalMarketQuality, getGlobalMarketQuality } from '../lib/market/market';
 import { getDiffusionInfo } from '../lib/market/marketDiffusion';
@@ -11,7 +11,7 @@ import { formatCurrency, formatNumber } from '../utils/utils';
 import { getResourceIcon } from '../utils/resourceIcons';
 import { builtBuildings, Building, BUILDING_RECIPES, BUILDING_NAMES, upgradeBuilding, buildFacility, BUILDING_COSTS } from '../lib/Building';
 import { isRecipeResearched } from '../lib/research';
-import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft, Settings, Hammer, Zap, Play, Square, ArrowUpCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Repeat, Box, Globe, Coins, ShoppingCart, Minus, MoveRight, MoveLeft, Settings, Hammer, Zap, Play, Square, ArrowUpCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown, ShoppingBag } from 'lucide-react';
 
 type SortKey = 'name' | 'localPrice' | 'globalPrice' | 'localQuality' | 'globalQuality' | 'localSupply' | 'globalSupply' | 'amount';
 
@@ -100,6 +100,11 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
             if (success) refresh();
       };
 
+      const handleBuyResource = (type: ResourceType, amount: number) => {
+            const success = buyResourceEconomy(inventoryRef.current, type, amount, getBalance());
+            if (success) refresh();
+      };
+
       const handleToggleAutosell = (type: ResourceType, enabled: boolean) => {
             setAutoSellEnabled(type, enabled);
             // If enabling for the first time on 0, set defaults
@@ -116,6 +121,24 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
             } else {
                   setAutoSellAmount(type, value);
             }
+            refresh();
+      };
+
+      const handleToggleAutobuy = (type: ResourceType, enabled: boolean) => {
+            setAutoBuyEnabled(type, enabled);
+            // If enabling for the first time, set default max price to Infinity
+            if (enabled && getAutoBuyMaxPrice(type) === Infinity) {
+                  const resource = resources[type];
+                  const localSupply = getLocalMarketSupply(type);
+                  const localQuality = getLocalMarketQuality(type);
+                  const currentPrice = resource.getLocalPrice(localSupply, localQuality);
+                  setAutoBuyMaxPrice(type, currentPrice * 2); // Default to 2x current price
+            }
+            refresh();
+      };
+
+      const handleUpdateAutobuyMaxPrice = (type: ResourceType, value: number) => {
+            setAutoBuyMaxPrice(type, value);
             refresh();
       };
 
@@ -150,7 +173,7 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                     </h2>
                               </div>
 
-                              <table className="w-full text-left border-collapse min-w-[1100px]">
+                              <table className="w-full text-left border-collapse min-w-[950px]">
                                     <thead>
                                           <tr className="border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
                                                 <th className="px-4 py-3 font-medium cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('name')}>
@@ -168,16 +191,7 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                             Global Price {renderSortIcon('globalPrice')}
                                                       </div>
                                                 </th>
-                                                <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('localQuality')}>
-                                                      <div className="flex items-center justify-center gap-1">
-                                                            Local Quality {renderSortIcon('localQuality')}
-                                                      </div>
-                                                </th>
-                                                <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('globalQuality')}>
-                                                      <div className="flex items-center justify-center gap-1">
-                                                            Global Quality {renderSortIcon('globalQuality')}
-                                                      </div>
-                                                </th>
+
                                                 <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-200 transition-colors" onClick={() => handleSort('localSupply')}>
                                                       <div className="flex items-center justify-center gap-1">
                                                             Local Market {renderSortIcon('localSupply')}
@@ -205,6 +219,8 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                 const currentTradeAmount = tradeAmounts[type] || 1;
                                                 const autoSellAmount = getAutoSellAmount(type);
                                                 const autoSellMinKeep = getAutoSellMinKeep(type);
+                                                const autobuy = isAutoBuyEnabled(type);
+                                                const autoBuyMaxPrice = getAutoBuyMaxPrice(type);
                                                 const isExpanded = expandedResource === type;
 
                                                 return (
@@ -241,6 +257,9 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                                                                       <span className="text-emerald-500"> (+{bonusPercent}%)</span>
                                                                                                 )}
                                                                                           </div>
+                                                                                          <div className="text-[10px] text-slate-500 font-mono italic">
+                                                                                                Q: {formatNumber(localQuality, { decimals: 2, forceDecimals: true })}
+                                                                                          </div>
                                                                                     </div>
                                                                               );
                                                                         })()}
@@ -265,20 +284,15 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                                                                       <span className="text-emerald-400/70"> (+{bonusPercent}%)</span>
                                                                                                 )}
                                                                                           </div>
+                                                                                          <div className="text-[10px] text-slate-500 font-mono italic">
+                                                                                                Q: {formatNumber(globalQuality, { decimals: 2, forceDecimals: true })}
+                                                                                          </div>
                                                                                     </div>
                                                                               );
                                                                         })()}
                                                                   </td>
 
-                                                                  {/* Local Quality */}
-                                                                  <td className="px-4 py-4 text-center">
-                                                                        <span className="text-slate-500 font-mono text-xs italic">{formatNumber(localQuality, { decimals: 2, forceDecimals: true })}</span>
-                                                                  </td>
 
-                                                                  {/* Global Quality */}
-                                                                  <td className="px-4 py-4 text-center">
-                                                                        <span className="text-slate-500 font-mono text-xs italic">{formatNumber(globalQuality, { decimals: 2, forceDecimals: true })}</span>
-                                                                  </td>
 
                                                                   {/* Local Market Supply */}
                                                                   <td className="px-4 py-4 text-center">
@@ -360,11 +374,11 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                                   {/* Actions */}
                                                                   <td className="px-4 py-4 text-right">
                                                                         <div className="flex items-center justify-end gap-2">
-                                                                              {/* Buy Placeholder */}
+                                                                              {/* Buy Button */}
                                                                               <button
-                                                                                    disabled
-                                                                                    className="p-2 rounded-lg bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700 hover:bg-slate-700/50"
-                                                                                    title="Buy (Not implemented)"
+                                                                                    onClick={() => handleBuyResource(type, currentTradeAmount)}
+                                                                                    className="p-2 rounded-lg bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500 transition-all active:scale-95 shadow-lg shadow-emerald-900/20"
+                                                                                    title={`Buy ${currentTradeAmount}`}
                                                                               >
                                                                                     <ShoppingCart className="w-4 h-4" />
                                                                               </button>
@@ -390,6 +404,18 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                                                     <Repeat className={`w-4 h-4 ${autosell ? 'animate-spin-slow' : ''}`} />
                                                                               </button>
 
+                                                                              {/* Autobuy Toggle */}
+                                                                              <button
+                                                                                    onClick={() => handleToggleAutobuy(type, !autobuy)}
+                                                                                    className={`p-2 rounded-lg border transition-all active:scale-95 ${autobuy
+                                                                                          ? 'bg-blue-600 border-blue-500 text-white active:bg-blue-700'
+                                                                                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                                                                                          }`}
+                                                                                    title={autobuy ? "Disable Auto-buy" : "Enable Auto-buy"}
+                                                                              >
+                                                                                    <ShoppingBag className={`w-4 h-4`} />
+                                                                              </button>
+
                                                                               {/* Config Toggle */}
                                                                               <button
                                                                                     onClick={() => setExpandedResource(expandedResource === type ? null : type)}
@@ -406,7 +432,7 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
                                                             </tr>
                                                             {isExpanded && (
                                                                   <tr className="bg-slate-800/30 animate-in slide-in-from-top-2 duration-200">
-                                                                        <td colSpan={11} className="px-4 py-4 border-b border-slate-800/50 shadow-inner">
+                                                                        <td colSpan={9} className="px-4 py-4 border-b border-slate-800/50 shadow-inner">
                                                                               <div className="flex items-center gap-8 px-4">
                                                                                     <div className="flex items-center gap-2 text-sm text-slate-400">
                                                                                           <Settings className="w-4 h-4" />
@@ -445,6 +471,37 @@ export default function InventoryPage({ inventoryRef, refresh, refreshToken }: I
 
                                                                                     <div className="flex-1 text-right text-xs text-slate-500 italic">
                                                                                           Changes apply immediately on next tick.
+                                                                                    </div>
+                                                                              </div>
+
+                                                                              {/* Autobuy Configuration */}
+                                                                              <div className="flex items-center gap-8 px-4 mt-4 pt-4 border-t border-slate-800">
+                                                                                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                                                                                          <ShoppingBag className="w-4 h-4" />
+                                                                                          <span className="font-semibold text-slate-300">Autobuy Configuration</span>
+                                                                                    </div>
+
+                                                                                    <div className="flex items-center gap-4">
+                                                                                          <div className="flex flex-col gap-1">
+                                                                                                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Max Buy Price</label>
+                                                                                                <div className="relative">
+                                                                                                      <input
+                                                                                                            type="number"
+                                                                                                            value={autoBuyMaxPrice === Infinity ? '' : autoBuyMaxPrice.toFixed(4)}
+                                                                                                            onChange={(e) => handleUpdateAutobuyMaxPrice(type, parseFloat(e.target.value) || 0)}
+                                                                                                            placeholder="No limit"
+                                                                                                            className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-100 w-32 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                                                      />
+                                                                                                      <div className="absolute right-2 top-1.5 text-xs text-slate-600 select-none">
+                                                                                                            <Coins className="w-3 h-3" />
+                                                                                                      </div>
+                                                                                                </div>
+                                                                                                <p className="text-[10px] text-slate-600">Won't buy if price exceeds this</p>
+                                                                                          </div>
+                                                                                    </div>
+
+                                                                                    <div className="flex-1 text-right text-xs text-slate-500 italic">
+                                                                                          Auto-buys missing inputs for production.
                                                                                     </div>
                                                                               </div>
 

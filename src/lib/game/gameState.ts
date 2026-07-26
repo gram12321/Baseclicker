@@ -13,6 +13,9 @@ const autoSellEnabled: Partial<Record<ResourceType, boolean>> = {};
 const autoSellAmount: Partial<Record<ResourceType, number>> = {};
 const autoSellMinKeep: Partial<Record<ResourceType, number>> = {};
 
+const autoBuyEnabled: Partial<Record<ResourceType, boolean>> = {};
+const autoBuyMaxPrice: Partial<Record<ResourceType, number>> = {};
+
 export function getBalance(): number {
 	return player.balance;
 }
@@ -80,6 +83,22 @@ export function setAutoSellMinKeep(resourceType: ResourceType, amount: number): 
 	autoSellMinKeep[resourceType] = Math.max(0, Math.floor(amount));
 }
 
+export function isAutoBuyEnabled(resourceType: ResourceType): boolean {
+	return autoBuyEnabled[resourceType] ?? false;
+}
+
+export function setAutoBuyEnabled(resourceType: ResourceType, enabled: boolean): void {
+	autoBuyEnabled[resourceType] = enabled;
+}
+
+export function getAutoBuyMaxPrice(resourceType: ResourceType): number {
+	return autoBuyMaxPrice[resourceType] ?? Infinity;
+}
+
+export function setAutoBuyMaxPrice(resourceType: ResourceType, price: number): void {
+	autoBuyMaxPrice[resourceType] = Math.max(0, price);
+}
+
 
 export function getGlobalProductionMultiplier(): number {
 	return player.productionMultiplier;
@@ -105,6 +124,14 @@ export function resetGameState(): number {
 	}
 	for (const key in autoSellMinKeep) {
 		delete autoSellMinKeep[key as ResourceType];
+	}
+
+	// Clear auto-buy records
+	for (const key in autoBuyEnabled) {
+		delete autoBuyEnabled[key as ResourceType];
+	}
+	for (const key in autoBuyMaxPrice) {
+		delete autoBuyMaxPrice[key as ResourceType];
 	}
 
 	return bonus;

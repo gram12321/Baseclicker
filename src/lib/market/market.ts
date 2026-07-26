@@ -3,7 +3,7 @@ import { Resource } from '../resources/resource';
 import { ResourceType } from '../../utils/types';
 import { resources } from '../resources/resourcesRegistry';
 import { formatCurrency } from '../../utils/utils';
-import { addToBalance } from '../game/gameState';
+import { addToBalance, isAutoBuyEnabled, getAutoBuyMaxPrice } from '../game/gameState';
 
 const transactionLog: { amount: number; description: string; newBalance: number; timestamp: number }[] = [];
 
@@ -130,6 +130,86 @@ export function sellResource(
   const total = price * amount;
   transaction(total, `Sold ${amount} ${resourceType} for ${formatCurrency(total, { maxDecimals: 4, minDecimals: 0 })}`);
   return true;
+}
+
+/**
+ * Buys a given amount of a resource from the local market, deducts money from balance.
+ * @param inventory The player's inventory
+ * @param resourceType The type of resource to buy
+ * @param amount The amount to buy
+ * @param currentBalance The player's current balance
+ * @returns true if purchase succeeded, false otherwise
+ */
+export function buyResource(
+  inventory: Inventory,
+  resourceType: ResourceType,
+  amount: number,
+  currentBalance: number
+): boolean {
+  if (amount <= 0) return false;
+
+  const resource: Resource = resources[resourceType];
+  const currentMarketSupply = getLocalMarketSupply(resourceType);
+  const currentMarketQuality = getLocalMarketQuality(resourceType);
+
+  // Check if market has enough supply
+  if (currentMarketSupply < amount) return false;
+
+  // Price depends on CURRENT market quality
+  const price = resource.getLocalPrice(currentMarketSupply, currentMarketQuality);
+  const total = price * amount;
+
+  // Check if player has enough money
+  if (currentBalance < total) return false;
+
+  // Remove from market supply
+  marketSupply[resourceType] = currentMarketSupply - amount;
+
+  // Deduct money from balance
+  transaction(-total, `Bought ${amount} ${resourceType} for ${formatCurrency(total, { maxDecimals: 4, minDecimals: 0 })}`);
+
+  // Add to inventory with market quality
+  inventory.add(resourceType, amount, currentMarketQuality);
+
+  return true;
+}
+
+/**
+ * Attempts to auto-buy a resource if autobuy is enabled and price is acceptable.
+ * Used by production system to prevent stalling when inputs are missing.
+ * @param inventory The player's inventory
+ * @param resourceType The type of resource to buy
+ * @param amount The amount needed
+ * @param currentBalance The player's current balance
+ * @returns true if purchase succeeded or autobuy is disabled, false if autobuy failed
+ */
+export function tryAutoBuy(
+  inventory: Inventory,
+  resourceType: ResourceType,
+  amount: number,
+  currentBalance: number
+): boolean {
+  // If autobuy is not enabled for this resource, return true (don't block production)
+  if (!isAutoBuyEnabled(resourceType)) {
+    return false;
+  }
+
+  const resource: Resource = resources[resourceType];
+  const currentMarketSupply = getLocalMarketSupply(resourceType);
+  const currentMarketQuality = getLocalMarketQuality(resourceType);
+
+  // Check if market has enough supply
+  if (currentMarketSupply < amount) return false;
+
+  // Get current price
+  const price = resource.getLocalPrice(currentMarketSupply, currentMarketQuality);
+  const maxPrice = getAutoBuyMaxPrice(resourceType);
+
+  // Check if price is acceptable
+  if (price > maxPrice) return false;
+
+  // Try to buy
+  return buyResource(inventory, resourceType, amount, currentBalance);
 }
 
 export function autoSellResource(

@@ -1,7 +1,7 @@
 import { BuildingType, Recipe, RecipeName, ResourceType } from '../utils/types';
 import { Inventory } from './inventory';
 import { getBalance, getGlobalProductionMultiplier } from './game/gameState';
-import { transaction } from './market/market';
+import { transaction, tryAutoBuy } from './market/market';
 import { isRecipeNameResearched, resetResearch } from './research';
 import {
   HarvestWood, QuarryStone, MineIronOre, SmeltOreBatch, GrowGrain, GrowSugar, BakeBread, BakeCake,
@@ -302,6 +302,11 @@ export class Building {
       // and we are at the very beginning (progress 0).
       if (progress === 0 && remainingWork > 0) {
         if (recipe.inputs.length > 0) {
+          if (!recipe.inputs.every(i => inventory.has(i.resource, i.amount))) {
+            if (!this.attemptAutobuy(recipe, inventory)) {
+              break;
+            }
+          }
           if (recipe.inputs.every(i => inventory.has(i.resource, i.amount))) {
             // Calculate average input quality for this cycle
             let totalQuality = 0;
@@ -417,6 +422,19 @@ export class Building {
     }
 
     this.recipeProgress.set(recipe.name, progress);
+  }
+
+  private attemptAutobuy(recipe: Recipe, inventory: Inventory): boolean {
+    for (const input of recipe.inputs) {
+      if (!inventory.has(input.resource, input.amount)) {
+        const needed = input.amount - inventory.getAmount(input.resource);
+        if (!tryAutoBuy(inventory, input.resource, needed, getBalance())) {
+          return false;
+        }
+      }
+    }
+
+    return recipe.inputs.every(i => inventory.has(i.resource, i.amount));
   }
 
   setProduction(recipeName: RecipeName | null): boolean {

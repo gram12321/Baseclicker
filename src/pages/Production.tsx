@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { ResourceType, BuildingType, RecipeName } from '../utils/types';
-import { resources } from '../lib/resources/resourcesRegistry';
+import { BuildingType, RecipeName } from '../utils/types';
 import { builtBuildings, upgradeBuilding, upgradeBuildingQuality, buildFacility as buildFacilityAction, BUILDING_NAMES } from '../lib/Building';
 import { researchRecipe, isRecipeResearched } from '../lib/research';
 import { getGameday } from '../lib/game/gametick';
 import { Inventory } from '../lib/inventory';
-import { getBalance, getResearch } from '../lib/game/gameState';
+import { getBalance, getResearch, isAutoBuyEnabled } from '../lib/game/gameState';
 import { ALL_RECIPES } from '../lib/recipes/recipes';
 import { formatCurrency, formatNumber } from '../utils/utils';
-
 import { ResearchModal } from '../components/production/ResearchModal';
 import { BuildBuildingsModal } from '../components/production/BuildBuildingsModal';
 import { Button } from '../components/ui/button';
-import { Hammer, Zap, Play, Square, AlertCircle } from 'lucide-react';
+import { Hammer, Zap, Play, Square, AlertCircle, ShoppingBag, Ban } from 'lucide-react';
 
 const buildingTypes = Object.values(BuildingType);
 
@@ -214,12 +212,29 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
                                                                   <div>
                                                                         <h3 className="text-lg font-bold text-slate-100">{BUILDING_NAMES[buildingType]}</h3>
                                                                         <div className="flex items-center gap-2">
-                                                                              {isActive && building.isStalled(inventoryRef.current) && (
-                                                                                    <div className="flex items-center gap-1 text-[10px] text-amber-500 animate-pulse">
-                                                                                          <AlertCircle className="w-3 h-3" />
-                                                                                          <span>Missing Resources</span>
-                                                                                    </div>
-                                                                              )}
+                                                                              {isActive && building.isStalled(inventoryRef.current) && (() => {
+                                                                                    // Check if any missing inputs have autobuy enabled
+                                                                                    const missingInputs = currentRecipe?.inputs.filter(i =>
+                                                                                          !inventoryRef.current.has(i.resource, i.amount)
+                                                                                    ) || [];
+                                                                                    const hasAutobuyEnabled = missingInputs.some(i => isAutoBuyEnabled(i.resource));
+
+                                                                                    return (
+                                                                                          <div className={`flex items-center gap-1 text-[10px] animate-pulse ${hasAutobuyEnabled ? 'text-blue-400' : 'text-amber-500'}`}>
+                                                                                                {hasAutobuyEnabled ? (
+                                                                                                      <>
+                                                                                                            <ShoppingBag className="w-3 h-3" />
+                                                                                                            <span>Waiting for Autobuy</span>
+                                                                                                      </>
+                                                                                                ) : (
+                                                                                                      <>
+                                                                                                            <AlertCircle className="w-3 h-3" />
+                                                                                                            <span>Missing Resources</span>
+                                                                                                      </>
+                                                                                                )}
+                                                                                          </div>
+                                                                                    );
+                                                                              })()}
                                                                         </div>
                                                                   </div>
                                                                   <div className="flex flex-col gap-2">
@@ -297,12 +312,24 @@ export default function Production({ refresh, inventoryRef }: ProductionProps) {
                                                                                                             {recipe.inputs.map(input => {
                                                                                                                   const owned = inventoryRef.current.getAmount(input.resource);
                                                                                                                   const isLow = owned < input.amount;
+                                                                                                                  const autobuyEnabled = isAutoBuyEnabled(input.resource);
                                                                                                                   return (
                                                                                                                         <div key={input.resource} className="flex items-center gap-1">
                                                                                                                               <span className="text-slate-500">{input.resource}:</span>
                                                                                                                               <span className={isLow ? 'text-rose-400 font-bold' : 'text-slate-300'}>
                                                                                                                                     {formatNumber(owned, { compact: true })}/{input.amount}
                                                                                                                               </span>
+                                                                                                                              {isLow && (
+                                                                                                                                    autobuyEnabled ? (
+                                                                                                                                          <div title="Autobuy enabled - will purchase if price acceptable">
+                                                                                                                                                <ShoppingBag className="w-3 h-3 text-blue-400" />
+                                                                                                                                          </div>
+                                                                                                                                    ) : (
+                                                                                                                                          <div title="Autobuy disabled - production will stall">
+                                                                                                                                                <Ban className="w-3 h-3 text-rose-400" />
+                                                                                                                                          </div>
+                                                                                                                                    )
+                                                                                                                              )}
                                                                                                                         </div>
                                                                                                                   );
                                                                                                             })}

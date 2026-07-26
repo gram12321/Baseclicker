@@ -4,6 +4,8 @@ import { ResourceType } from '../src/utils/types';
 import { Inventory } from '../src/lib/inventory';
 import {
       sellResource,
+      buyResource,
+      tryAutoBuy,
       autoSellResource,
       autoSellAll,
       resetEconomy,
@@ -23,7 +25,7 @@ import {
       processMarketDiffusion,
       getDiffusionInfo
 } from '../src/lib/market/marketDiffusion';
-import { getBalance, setBalance, resetGameState } from '../src/lib/game/gameState';
+import { getBalance, setBalance, resetGameState, isAutoBuyEnabled, setAutoBuyEnabled, getAutoBuyMaxPrice, setAutoBuyMaxPrice } from '../src/lib/game/gameState';
 import { resources } from '../src/lib/resources/resourcesRegistry';
 
 describe('Market System', () => {
@@ -114,9 +116,139 @@ describe('Market System', () => {
             });
       });
 
+      describe('Buying Resources', () => {
+            it('should allow buying resources from local market and deduct balance', () => {
+                  const amount = 100;
+                  const initialBalance = 10000;
+                  setBalance(initialBalance);
+
+                  const initialSupply = getLocalMarketSupply(ResourceType.Wood);
+                  const success = buyResource(inventory, ResourceType.Wood, amount, getBalance());
+
+                  expect(success).toBe(true);
+                  expect(inventory.getAmount(ResourceType.Wood)).toBe(amount);
+                  expect(getBalance()).toBeLessThan(initialBalance);
+            });
+
+            it('should fail if insufficient balance', () => {
+                  const amount = 100;
+                  setBalance(1); // Very low balance
+
+                  const success = buyResource(inventory, ResourceType.Wood, amount, getBalance());
+
+                  expect(success).toBe(false);
+                  expect(inventory.getAmount(ResourceType.Wood)).toBe(0);
+                  expect(getBalance()).toBe(1);
+            });
+
+            it('should fail if insufficient market supply', () => {
+                  const initialSupply = getLocalMarketSupply(ResourceType.Wood);
+                  const amount = initialSupply + 1000; // More than available
+                  setBalance(1000000); // Plenty of money
+
+                  const success = buyResource(inventory, ResourceType.Wood, amount, getBalance());
+
+                  expect(success).toBe(false);
+                  expect(inventory.getAmount(ResourceType.Wood)).toBe(0);
+            });
+
+            it('should decrease local market supply when buying', () => {
+                  const amount = 100;
+                  const initialSupply = getLocalMarketSupply(ResourceType.Wood);
+                  setBalance(10000);
+
+                  buyResource(inventory, ResourceType.Wood, amount, getBalance());
+
+                  const newSupply = getLocalMarketSupply(ResourceType.Wood);
+                  expect(newSupply).toBe(initialSupply - amount);
+            });
+
+            it('should transfer market quality to inventory during purchase', () => {
+                  const amount = 100;
+                  const marketQuality = 5.0;
+                  setBalance(100000);
+
+                  // Get initial market state
+                  const initialSupply = getLocalMarketSupply(ResourceType.Wood);
+                  const initialQuality = getLocalMarketQuality(ResourceType.Wood);
+
+                  // Add to market with high quality
+                  addToLocalMarket(ResourceType.Wood, 1000, marketQuality);
+
+                  // Calculate expected mixed quality
+                  const expectedQuality = mixQuality(initialSupply, initialQuality, 1000, marketQuality);
+
+                  buyResource(inventory, ResourceType.Wood, amount, getBalance());
+
+                  // Inventory quality should match the market's mixed quality
+                  const inventoryQuality = inventory.getQuality(ResourceType.Wood);
+                  expect(inventoryQuality).toBeCloseTo(expectedQuality, 1);
+            });
+
+            it('should log buy transactions', () => {
+                  const initialLogLength = getTransactionLog().length;
+                  setBalance(10000);
+                  buyResource(inventory, ResourceType.Wood, 100, getBalance());
+
+                  const newLog = getTransactionLog();
+                  expect(newLog.length).toBe(initialLogLength + 1);
+                  expect(newLog[newLog.length - 1].description).toContain('Bought 100 Wood');
+            });
+      });
+
+      describe('Auto-Buying', () => {
+            it('should return false if autobuy is not enabled', () => {
+                  setBalance(10000);
+                  setAutoBuyEnabled(ResourceType.Wood, false);
+
+                  const success = tryAutoBuy(inventory, ResourceType.Wood, 100, getBalance());
+
+                  expect(success).toBe(false);
+                  expect(inventory.getAmount(ResourceType.Wood)).toBe(0);
+            });
+
+            it('should buy if autobuy is enabled and price is below max', () => {
+                  setBalance(10000);
+                  setAutoBuyEnabled(ResourceType.Wood, true);
+                  setAutoBuyMaxPrice(ResourceType.Wood, 100); // High max price
+
+                  const success = tryAutoBuy(inventory, ResourceType.Wood, 100, getBalance());
+
+                  expect(success).toBe(true);
+                  expect(inventory.getAmount(ResourceType.Wood)).toBe(100);
+                  expect(getBalance()).toBeLessThan(10000);
+            });
+
+            it('should not buy if price exceeds max price', () => {
+                  const initialBalance = 10000;
+                  setBalance(initialBalance);
+                  setAutoBuyEnabled(ResourceType.Wood, true);
+                  setAutoBuyMaxPrice(ResourceType.Wood, 0.0001); // Very low max price
+
+                  const success = tryAutoBuy(inventory, ResourceType.Wood, 100, getBalance());
+
+                  expect(success).toBe(false);
+                  expect(inventory.getAmount(ResourceType.Wood)).toBe(0);
+                  expect(getBalance()).toBe(initialBalance); // Balance unchanged
+            });
+
+            it('should not buy if insufficient market supply', () => {
+                  const initialSupply = getLocalMarketSupply(ResourceType.Wood);
+                  const amount = initialSupply + 1000;
+                  setBalance(1000000);
+                  setAutoBuyEnabled(ResourceType.Wood, true);
+                  setAutoBuyMaxPrice(ResourceType.Wood, 100);
+
+                  const success = tryAutoBuy(inventory, ResourceType.Wood, amount, getBalance());
+
+                  expect(success).toBe(false);
+                  expect(inventory.getAmount(ResourceType.Wood)).toBe(0);
+            });
+      });
+
       describe('Auto-Selling', () => {
             it('should respect minKeep amount', () => {
-                  inventory.add(ResourceType.Stome, 100); // Typo in original code? No, ResourceType.Stone
+                  inventory.add(ResourceType.Stone, 100); // Fixed typo from Stome
                   // Let's stick to Wood which works
                   inventory.add(ResourceType.Wood, 100);
 
