@@ -1,88 +1,96 @@
-import { ResourceType, RecipeName, BatchComposition } from '../../utils/types';
+import { ResourceType, BatchComposition, Recipe, RecipeName } from '../../utils/types';
 import { Inventory } from '../inventory';
+import { getTechLevel } from '../game/technology';
 
 /**
- * Helper functions for OreBatch production and consumption.
+ * Creates the hidden composition for a newly mined ore batch. The composition
+ * is generated once and remains attached to that batch until it is smelted.
  */
+export function createOreBatchComposition(recipeName: RecipeName): BatchComposition {
+      switch (recipeName) {
+            case RecipeName.MineIronOre:
+                  return {
+                        oreType: 'IronOre',
+                        yields: {
+                              [ResourceType.Iron]: 1.0 + (Math.random() * 0.4 - 0.2),
+                              [ResourceType.Slag]: 0.5 + (Math.random() * 0.4 - 0.2),
+                        },
+                  };
+            default:
+                  throw new Error(`No ore batch composition defined for ${recipeName}`);
+      }
+}
 
-/**
- * Produce an OreBatch with composition based on the mining recipe.
- */
+/** Adds newly mined ore batches with their fixed, recipe-specific composition. */
 export function produceOreBatch(
       inventory: Inventory,
       recipeName: RecipeName,
       amount: number,
-      quality: number
+      quality: number,
 ): void {
-      const composition = generateBatchComposition(recipeName);
-      const batchQuality = calculateBatchQuality(composition);
+      for (let batchNumber = 0; batchNumber < amount; batchNumber += 1) {
+            inventory.addBatch(
+                  ResourceType.OreBatch,
+                  1,
+                  quality,
+                  createOreBatchComposition(recipeName),
+            );
+      }
+}
 
-      inventory.addBatch(
-            ResourceType.OreBatch,
-            amount,
-            Math.min(quality, batchQuality),
-            composition
-      );
+/** Check if a recipe involves batch inputs. */
+export function hasBatchInput(recipe: Recipe): boolean {
+      return recipe.inputs.some(input => isBatchResource(input.resource));
 }
 
 /**
- * Consume an OreBatch and produce outputs based on its composition.
+ * Process outputs when a batch was consumed (e.g. smelting).
  */
-export function consumeOreBatch(
+export function processBatchOutput(
       inventory: Inventory,
-      amount: number,
-      outputQuality: number
-): boolean {
-      const batch = inventory.removeBatch(ResourceType.OreBatch, amount);
+      composition: BatchComposition,
+      productionQuality: number,
+      inputQualityCap: number
+): void {
+      for (const [resourceType, yieldAmount] of Object.entries(composition.yields)) {
+            const resType = resourceType as ResourceType;
+            const resTechLevel = getTechLevel(resType);
+            const resQuality = Math.min(
+                  productionQuality,
+                  resTechLevel,
+                  inputQualityCap
+            );
 
-      if (!batch || !batch.composition) {
-            return false;
+            inventory.add(resType, yieldAmount as number, resQuality);
       }
+}
+/**
+ * Check if a resource type is handled as a batch.
+ */
+export function isBatchResource(resource: ResourceType): boolean {
+      return resource === ResourceType.OreBatch;
+}
 
-      // Produce outputs based on batch composition
-      if (batch.composition.yields) {
-            for (const [resourceType, yieldAmount] of Object.entries(batch.composition.yields)) {
-                  inventory.add(resourceType as ResourceType, yieldAmount, outputQuality);
+/**
+ * Consume an input resource (batch or standard) and return its quality/composition data.
+ */
+export function consumeInput(
+      inventory: Inventory,
+      resource: ResourceType,
+      amount: number
+): { quality: number, composition: BatchComposition | null } {
+      if (isBatchResource(resource)) {
+            const batch = inventory.removeBatch(resource, amount);
+            if (batch) {
+                  return {
+                        quality: batch.quality,
+                        composition: batch.composition ?? null,
+                  };
             }
+            throw new Error(`Unable to consume ${amount} ${resource} from inventory batches`);
+      } else {
+            const quality = inventory.getQuality(resource);
+            inventory.remove(resource, amount);
+            return { quality, composition: null };
       }
-
-      return true;
-}
-
-/**
- * Generate batch composition based on mining recipe.
- */
-function generateBatchComposition(recipeName: RecipeName): BatchComposition {
-      // Iron Ore composition (Fe: 60-70%, Slag: 30-40%)
-      if (recipeName === RecipeName.MineIronOre) {
-            const ironYield = 1.0 + (Math.random() * 0.4 - 0.2);  // 0.8 - 1.2
-            const slagYield = 0.5 + (Math.random() * 0.4 - 0.2);  // 0.3 - 0.7
-
-            return {
-                  oreType: 'IronOre',
-                  yields: {
-                        [ResourceType.Iron]: ironYield,
-                        [ResourceType.Slag]: slagYield
-                  }
-            };
-      }
-
-      // Default fallback
-      return {
-            oreType: 'Unknown',
-            yields: {}
-      };
-}
-
-/**
- * Calculate quality from batch composition (average of yields).
- */
-function calculateBatchQuality(composition: BatchComposition): number {
-      if (!composition || !composition.yields) return 1.0;
-
-      const yields = Object.values(composition.yields) as number[];
-      if (yields.length === 0) return 1.0;
-
-      const sum = yields.reduce((a, b) => a + b, 0);
-      return sum / yields.length;
 }

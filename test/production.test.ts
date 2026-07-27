@@ -78,15 +78,15 @@ describe('Production', () => {
   it('Pay-at-Start: input is consumed for next cycle when overflow restarts production', () => {
     setBalance(1000);
     setResearch(1000);
-    ALL_RECIPES[RecipeName.SmeltIron].workamount = 1;
-    researchRecipe(RecipeName.SmeltIron);
-    buildFacility(BuildingType.Mine);
+    ALL_RECIPES[RecipeName.SmeltOreBatch].workamount = 1;
+    researchRecipe(RecipeName.SmeltOreBatch);
+    buildFacility(BuildingType.Smelter);
 
     // Initial state: 0 progress.
-    const inv = new Inventory({ [ResourceType.Stone]: 4, [ResourceType.Electricity]: 20 });
-    const mine = builtBuildings.get(BuildingType.Mine);
-    mine?.selectRecipe(RecipeName.SmeltIron);
-    mine?.activate();
+    const inv = new Inventory({ [ResourceType.OreBatch]: 2, [ResourceType.Coal]: 2 });
+    const smelter = builtBuildings.get(BuildingType.Smelter);
+    smelter?.selectRecipe(RecipeName.SmeltOreBatch);
+    smelter?.activate();
 
     // Tick 1: 1.5 work added.
     // 1. Progress 0 -> Consume inputs for Cycle 1 (Stone: 4 → 2).
@@ -96,36 +96,38 @@ describe('Production', () => {
     // 5. Apply 0.5 work -> Progress 50%. Done.
     advanceProduction(inv, 1.5);
 
-    expect(inv.getAmount(ResourceType.Iron)).toBe(1);
-    expect(inv.getAmount(ResourceType.Stone)).toBe(0); // Consumed for both cycle 1 AND cycle 2
-    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBeCloseTo(0.5);
+    expect(inv.getAmount(ResourceType.Iron)).toBeGreaterThan(0);
+    expect(inv.getAmount(ResourceType.OreBatch)).toBe(0); // Consumed for both cycle 1 AND cycle 2
+    expect(inv.getAmount(ResourceType.Coal)).toBe(0);
+    expect(getBuildingProgress(BuildingType.Smelter, RecipeName.SmeltOreBatch)).toBeCloseTo(0.5);
   });
 
   it('Pay-at-Start: does NOT consume for tomorrow if no work left in current tick', () => {
     setBalance(1000);
     setResearch(1000);
-    ALL_RECIPES[RecipeName.SmeltIron].workamount = 1;
-    researchRecipe(RecipeName.SmeltIron);
-    buildFacility(BuildingType.Mine);
-    const mine1 = builtBuildings.get(BuildingType.Mine);
-    mine1?.selectRecipe(RecipeName.SmeltIron);
-    mine1?.activate();
+    ALL_RECIPES[RecipeName.SmeltOreBatch].workamount = 1;
+    researchRecipe(RecipeName.SmeltOreBatch);
+    buildFacility(BuildingType.Smelter);
+    const smelter = builtBuildings.get(BuildingType.Smelter);
+    smelter?.selectRecipe(RecipeName.SmeltOreBatch);
+    smelter?.activate();
 
-    const inv = new Inventory({ [ResourceType.Stone]: 6, [ResourceType.Electricity]: 50 });
+    const inv = new Inventory({ [ResourceType.OreBatch]: 2, [ResourceType.Coal]: 2 });
 
     // Tick 1: 1.0 work.
     // Starts at 0 -> consumes 2 stone. Progress moves to 1.0. Finishes. Progress 0. 
     // Remaining work is 0 -> STOPS (does not consume for Cycle 2 yet).
     advanceProduction(inv, 1.0);
-    expect(inv.getAmount(ResourceType.Iron)).toBe(1);
-    expect(inv.getAmount(ResourceType.Stone)).toBe(4);
-    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBe(0);
+    expect(inv.getAmount(ResourceType.Iron)).toBeGreaterThan(0);
+    expect(inv.getAmount(ResourceType.OreBatch)).toBe(1);
+    expect(inv.getAmount(ResourceType.Coal)).toBe(1);
+    expect(getBuildingProgress(BuildingType.Smelter, RecipeName.SmeltOreBatch)).toBe(0);
 
     // Tick 2: 1.0 work.
     // Starts at 0 -> consumes 2 stone. Progress moves to 1.0. Finishes.
     advanceProduction(inv, 1.0);
-    expect(inv.getAmount(ResourceType.Iron)).toBe(2);
-    expect(inv.getAmount(ResourceType.Stone)).toBe(2);
+    expect(inv.getAmount(ResourceType.OreBatch)).toBe(0);
+    expect(inv.getAmount(ResourceType.Coal)).toBe(0);
   });
 
   it('global production multiplier scales production', () => {
@@ -148,22 +150,22 @@ describe('Production', () => {
   it('stalls at 0% when blocked by inputs (Pay-at-Start)', () => {
     setBalance(1000);
     setResearch(1000);
-    ALL_RECIPES[RecipeName.SmeltIron].workamount = 1;
-    researchRecipe(RecipeName.SmeltIron);
-    buildFacility(BuildingType.Mine);
-    const mine2 = builtBuildings.get(BuildingType.Mine);
-    mine2?.selectRecipe(RecipeName.SmeltIron);
-    mine2?.activate();
+    ALL_RECIPES[RecipeName.SmeltOreBatch].workamount = 1;
+    researchRecipe(RecipeName.SmeltOreBatch);
+    buildFacility(BuildingType.Smelter);
+    const smelter = builtBuildings.get(BuildingType.Smelter);
+    smelter?.selectRecipe(RecipeName.SmeltOreBatch);
+    smelter?.activate();
 
-    const inv = new Inventory({ [ResourceType.Stone]: 0, [ResourceType.Electricity]: 50 });
+    const inv = new Inventory({ [ResourceType.Coal]: 1 });
 
     advanceProduction(inv, 1.0);
-    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBe(0);
+    expect(getBuildingProgress(BuildingType.Smelter, RecipeName.SmeltOreBatch)).toBe(0);
     expect(inv.getAmount(ResourceType.Iron)).toBe(0);
 
-    inv.add(ResourceType.Stone, 2);
+    inv.add(ResourceType.OreBatch, 1);
     advanceProduction(inv, 1.0);
-    expect(inv.getAmount(ResourceType.Iron)).toBe(1);
-    expect(getBuildingProgress(BuildingType.Mine, RecipeName.SmeltIron)).toBe(0);
+    expect(inv.getAmount(ResourceType.Iron)).toBeGreaterThan(0);
+    expect(getBuildingProgress(BuildingType.Smelter, RecipeName.SmeltOreBatch)).toBe(0);
   });
 });

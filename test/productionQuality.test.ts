@@ -76,27 +76,26 @@ describe('Production Quality System', () => {
             setBalance(100000);
             setResearch(1000);
 
-            // Build mine with high quality and tech
-            researchRecipe(RecipeName.SmeltIron);
-            buildFacility(BuildingType.Mine);
+            // Build smelter with high quality and tech
+            researchRecipe(RecipeName.SmeltOreBatch);
+            buildFacility(BuildingType.Smelter);
 
             // Upgrade building quality
             for (let i = 0; i < 5; i++) {
-                  upgradeBuildingQuality(BuildingType.Mine);
+                  upgradeBuildingQuality(BuildingType.Smelter);
             }
 
-            const building = builtBuildings.get(BuildingType.Mine)!;
+            const building = builtBuildings.get(BuildingType.Smelter)!;
 
             // Set high tech level
             setTechLevel(ResourceType.Iron, 10);
 
-            // Add low quality stone as input
-            const inv = new Inventory({ [ResourceType.Electricity]: 100 });
-            inv.add(ResourceType.Stone, 10, 1.5); // Quality 1.5
+            const inv = new Inventory({ [ResourceType.Coal]: 1 });
+            inv.add(ResourceType.OreBatch, 1, 1.5);
 
-            building.selectRecipe(RecipeName.SmeltIron);
+            building.selectRecipe(RecipeName.SmeltOreBatch);
             building.activate();
-            // SmeltIron has workamount 2, so advance twice to complete
+            // Smelting takes two work units, so advance twice to complete.
             advanceProduction(inv);
             advanceProduction(inv);
 
@@ -104,7 +103,7 @@ describe('Production Quality System', () => {
             expect(inv.getAmount(ResourceType.Iron)).toBeGreaterThan(0);
 
             // Output should be capped by input quality + 1 = 2.25
-            // (Average of Stone Q1.5 and Electricity Q1.0 = 1.25)
+            // (Average of OreBatch Q1.5 and Coal Q1.0 = 1.25)
             const ironQuality = inv.getQuality(ResourceType.Iron);
             expect(ironQuality).toBe(2.25);
             expect(building.productionQuality).toBeGreaterThan(2.5); // Building can do more
@@ -114,21 +113,21 @@ describe('Production Quality System', () => {
             setBalance(100000);
             setResearch(1000);
 
-            // Build mine with LOW building quality
-            researchRecipe(RecipeName.SmeltIron);
-            buildFacility(BuildingType.Mine);
+            // Build smelter with LOW building quality
+            researchRecipe(RecipeName.SmeltOreBatch);
+            buildFacility(BuildingType.Smelter);
 
-            const building = builtBuildings.get(BuildingType.Mine)!;
+            const building = builtBuildings.get(BuildingType.Smelter)!;
 
             // Set high tech level
             setTechLevel(ResourceType.Iron, 10);
 
-            // Add high quality stone as input
-            const inv = new Inventory({ [ResourceType.Electricity]: 100 });
-            inv.add(ResourceType.Stone, 10, 5.0); // Quality 5.0
+            const inv = new Inventory({ [ResourceType.Coal]: 1 });
+            inv.add(ResourceType.OreBatch, 1, 5.0);
 
-            building.selectRecipe(RecipeName.SmeltIron);
+            building.selectRecipe(RecipeName.SmeltOreBatch);
             building.activate();
+            advanceProduction(inv);
             advanceProduction(inv);
 
             // Output should be capped by building quality (1.0 base)
@@ -139,28 +138,28 @@ describe('Production Quality System', () => {
             setBalance(100000);
             setResearch(1000);
 
-            researchRecipe(RecipeName.SmeltIron);
-            buildFacility(BuildingType.Mine);
+            researchRecipe(RecipeName.SmeltOreBatch);
+            buildFacility(BuildingType.Smelter);
 
             // Upgrade building quality to ~2.0
-            upgradeBuildingQuality(BuildingType.Mine);
-            upgradeBuildingQuality(BuildingType.Mine);
+            upgradeBuildingQuality(BuildingType.Smelter);
+            upgradeBuildingQuality(BuildingType.Smelter);
 
-            const building = builtBuildings.get(BuildingType.Mine)!;
+            const building = builtBuildings.get(BuildingType.Smelter)!;
 
             // Tech = 3, Building = ~2.0, Input = 1.0
             setTechLevel(ResourceType.Iron, 3);
 
-            const inv = new Inventory({ [ResourceType.Electricity]: 100 });
-            inv.add(ResourceType.Stone, 10, 1.0); // Quality 1.0
+            const inv = new Inventory({ [ResourceType.Coal]: 1 });
+            inv.add(ResourceType.OreBatch, 1, 1.0);
 
-            building.selectRecipe(RecipeName.SmeltIron);
+            building.selectRecipe(RecipeName.SmeltOreBatch);
             building.activate();
             advanceProduction(inv);
             advanceProduction(inv);
 
             // Output should be min(~2.0, 3, 2.0) = 2.0
-            // Input quality: (Stone Q1.0 + Electricity Q1.0) / 2 = 1.0
+            // Input quality: (OreBatch Q1.0 + Coal Q1.0) / 2 = 1.0
             // Cap: 1.0 + 1.0 = 2.0
             expect(inv.getQuality(ResourceType.Iron)).toBe(2.0);
       });

@@ -17,10 +17,15 @@ export class Inventory {
     this.batches = new Map();
 
     for (const r of Object.values(ResourceType)) {
-      this.amounts[r] = initial?.[r] ?? 0;
+      this.amounts[r] = 0;
       this.qualities[r] = 1.0; // Default quality
-      this.lifetimeTotals[r] = initial?.[r] ?? 0;
+      this.lifetimeTotals[r] = 0;
       this.batches.set(r, []);
+    }
+
+    for (const r of Object.values(ResourceType)) {
+      const amount = initial?.[r] ?? 0;
+      if (amount > 0) this.add(r, amount);
     }
   }
 
@@ -39,9 +44,9 @@ export class Inventory {
   add(resource: ResourceType, amount = 1, quality = 1.0): void {
     if (amount <= 0) return;
 
-    // Special handling for OreBatch - always create with composition
+    // Ore batches acquired outside a mine (for example from the market) still
+    // receive a fixed composition at acquisition time.
     if (resource === ResourceType.OreBatch) {
-      // Generate composition based on quality (market batches use quality as yield indicator)
       const composition: BatchComposition = {
         oreType: 'IronOre',
         yields: {
@@ -50,7 +55,6 @@ export class Inventory {
         }
       };
 
-      // Use addBatch instead of regular add
       this.addBatch(resource, amount, quality, composition);
       return;
     }
@@ -102,8 +106,13 @@ export class Inventory {
   ): void {
     if (amount <= 0) return;
 
-    // Update totals using regular add method
-    this.add(resource, amount, quality);
+    // Update totals directly to avoid infinite recursion with add() for OreBatch
+    const currentAmount = this.getAmount(resource);
+    const currentQuality = this.getQuality(resource);
+
+    this.qualities[resource] = mixQuality(currentAmount, currentQuality, amount, quality);
+    this.amounts[resource] = currentAmount + amount;
+    this.lifetimeTotals[resource] = (this.lifetimeTotals[resource] ?? 0) + amount;
 
     // Create and store batch
     const batch: ResourceBatch = {
@@ -128,28 +137,7 @@ export class Inventory {
 
     const batchQueue = this.batches.get(resource) || [];
 
-    if (batchQueue.length === 0) {
-      // No batches tracked - this is an orphaned OreBatch (from old system or market)
-      // Generate a random composition for it
-      if (this.remove(resource, amount)) {
-        const composition: BatchComposition | undefined = resource === ResourceType.OreBatch ? {
-          oreType: 'IronOre',
-          yields: {
-            [ResourceType.Iron]: 1.0 + (Math.random() * 0.4 - 0.2),  // 0.8 - 1.2
-            [ResourceType.Slag]: 0.5 + (Math.random() * 0.4 - 0.2)   // 0.3 - 0.7
-          }
-        } : undefined;
-
-        return {
-          batchId: this.generateBatchId(),
-          resourceType: resource,
-          amount,
-          quality: this.getQuality(resource),
-          composition
-        };
-      }
-      return null;
-    }
+    if (batchQueue.length === 0) return null;
 
     // FIFO: take from the oldest batch
     const oldestBatch = batchQueue[0];
@@ -170,15 +158,10 @@ export class Inventory {
       }
 
       return result;
-    } else {
-      // Need to consume multiple batches - for now, just take from first batch
-      // This is a simplified implementation
-      const availableAmount = oldestBatch.amount;
-      this.remove(resource, availableAmount);
-      const result = { ...oldestBatch };
-      batchQueue.shift();
-      return result;
     }
+
+    // A single recipe input cannot combine different hidden compositions.
+    return null;
   }
 
   /**

@@ -73,11 +73,11 @@ describe('Research System', () => {
             });
 
             it('deducts correct RP amount when researching', () => {
-                  setResearch(100);
+                  setResearch(200);
 
-                  researchRecipe(RecipeName.SmeltIron); // Cost: 50 RP
+                  researchRecipe(RecipeName.SmeltOreBatch); // Cost: 100 RP
 
-                  expect(getResearch()).toBe(50); // 100 - 50
+                  expect(getResearch()).toBe(100); // 200 - 100
             });
 
             it('does not deduct RP for free recipes (0 cost)', () => {
@@ -129,7 +129,7 @@ describe('Research System', () => {
             });
 
             it('returns false for unresearched recipes', () => {
-                  expect(isRecipeResearched(RecipeName.SmeltIron)).toBe(false);
+                  expect(isRecipeResearched(RecipeName.SmeltOreBatch)).toBe(false);
             });
 
             it('returns false for non-existent resources', () => {
@@ -146,7 +146,7 @@ describe('Research System', () => {
             });
 
             it('returns false for unresearched recipe names', () => {
-                  expect(isRecipeNameResearched(RecipeName.SmeltIron)).toBe(false);
+                  expect(isRecipeNameResearched(RecipeName.SmeltOreBatch)).toBe(false);
             });
       });
 
@@ -210,13 +210,13 @@ describe('Research System', () => {
                   researchRecipe(RecipeName.HarvestWood);   // 0 RP
                   researchRecipe(RecipeName.QuarryStone);  // 10 RP
                   researchRecipe(RecipeName.GrowGrain);  // 5 RP
-                  researchRecipe(RecipeName.SmeltIron);   // 50 RP
+                  researchRecipe(RecipeName.SmeltOreBatch);   // 100 RP
 
                   expect(isRecipeResearched(RecipeName.HarvestWood)).toBe(true);
                   expect(isRecipeResearched(RecipeName.QuarryStone)).toBe(true);
                   expect(isRecipeResearched(RecipeName.GrowGrain)).toBe(true);
-                  expect(isRecipeResearched(RecipeName.SmeltIron)).toBe(true);
-                  expect(getResearch()).toBe(935); // 1000 - 10 - 5 - 50
+                  expect(isRecipeResearched(RecipeName.SmeltOreBatch)).toBe(true);
+                  expect(getResearch()).toBe(885); // 1000 - 10 - 5 - 100
             });
 
             it('tracks all researched recipes in the set', () => {

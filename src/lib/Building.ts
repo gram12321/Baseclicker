@@ -1,4 +1,4 @@
-import { BuildingType, Recipe, RecipeName, ResourceType } from '../utils/types';
+import { BatchComposition, BuildingType, Recipe, RecipeName, ResourceType } from '../utils/types';
 import { Inventory } from './inventory';
 import { getBalance, getGlobalProductionMultiplier } from './game/gameState';
 import { transaction, tryAutoBuy } from './market/market';
@@ -7,7 +7,7 @@ import {
   HarvestWood, QuarryStone, MineIronOre, SmeltOreBatch, GrowGrain, GrowSugar, BakeBread, BakeCake,
   ManualPumping, ElectricPumping, MineCoal, CoalPower, SolarPower
 } from './recipes/recipes';
-import { produceOreBatch } from './resources/batchHelpers';
+import { consumeInput, hasBatchInput, processBatchOutput, produceOreBatch } from './resources/batchHelpers';
 import { getTechLevel } from './game/technology';
 
 const UPGRADE_COST_GROWTH = 1.5;
@@ -107,7 +107,7 @@ export class Building {
   private isActiveFlag: boolean = false;
   private recipeProgress: Map<RecipeName, number> = new Map();
   private currentCycleInputQuality: number = 1.0;
-  private currentBatchComposition: any = null; // Stores batch composition for current cycle
+  private currentBatchComposition: BatchComposition | null = null;
 
   constructor(buildingType: BuildingType, recipes: Recipe[] = [], productionStartCost: number = 0) {
     this.buildingType = buildingType;
@@ -297,49 +297,18 @@ export class Building {
     // 
     // ═══════════════════════════════════════════════════════════════════════════
 
-    while (true) {
-      // 1. Try to start a new cycle ONLY if we have work to do
-      // and we are at the very beginning (progress 0).
-      if (progress === 0 && remainingWork > 0) {
+    while (remainingWork > 0) {
+      // 1. Start a new cycle if needed
+      if (progress === 0) {
         if (recipe.inputs.length > 0) {
           if (!recipe.inputs.every(i => inventory.has(i.resource, i.amount))) {
+            // Try autobuy missing inputs
             if (!this.attemptAutobuy(recipe, inventory)) {
-              break;
+              break; // Stalled - couldn't get inputs
             }
           }
-          if (recipe.inputs.every(i => inventory.has(i.resource, i.amount))) {
-            // Calculate average input quality for this cycle
-            let totalQuality = 0;
-            this.currentBatchComposition = null; // Reset batch composition
-
-            recipe.inputs.forEach(i => {
-              // Special handling for OreBatch - capture composition and use BATCH quality
-              if (i.resource === ResourceType.OreBatch) {
-                const batch = inventory.removeBatch(i.resource, i.amount);
-                if (batch) {
-                  // Use the specific quality of the batch we just consumed
-                  totalQuality += batch.quality;
-
-                  if (batch.composition) {
-                    this.currentBatchComposition = batch.composition;
-                  }
-                  console.log(`[Q-DEBUG] Consumed OreBatch with Q${batch.quality}`);
-                } else {
-                  // Fallback (shouldn't happen due to check above)
-                  totalQuality += inventory.getQuality(i.resource);
-                }
-              } else {
-                // For normal resources, use the average inventory quality
-                totalQuality += inventory.getQuality(i.resource);
-                inventory.remove(i.resource, i.amount);
-              }
-            });
-            this.currentCycleInputQuality = totalQuality / recipe.inputs.length;
-            // Cycle started!
-          } else {
-            // Cannot start next cycle.
-            break;
-          }
+          // We have inputs (either initially or via autobuy)
+          this.consumeInputsAndStartCycle(recipe, inventory);
         } else {
           // No inputs - use base nature quality
           this.currentCycleInputQuality = 1.0;
@@ -347,12 +316,10 @@ export class Building {
       }
 
       // 2. Apply work
-      if (remainingWork > 0) {
-        const workNeeded = recipe.workamount - progress;
-        const workToApply = Math.min(remainingWork, workNeeded);
-        progress += workToApply;
-        remainingWork -= workToApply;
-      }
+      const workNeeded = recipe.workamount - progress;
+      const workToApply = Math.min(remainingWork, workNeeded);
+      progress += workToApply;
+      remainingWork -= workToApply;
 
       // 3. Complete Cycle?
       if (progress >= recipe.workamount) {
@@ -370,71 +337,58 @@ export class Building {
           techLevel,                 // Tech cap (hard limit)
           inputQualityCap            // Input cap (can improve by +1 max)
         );
-
-        // Special handling for OreBatch production (mining)
         if (recipe.outputResource === ResourceType.OreBatch) {
-          console.log(`[Q-DEBUG] Mining OreBatch Q${baseOutputQuality.toFixed(2)} (Tech: ${techLevel})`);
           produceOreBatch(inventory, recipe.name, recipe.outputAmount, baseOutputQuality);
-        }
-        // Special handling for smelting (consuming OreBatch)
-        else if (recipe.inputs.some(i => i.resource === ResourceType.OreBatch)) {
-          // Use the batch composition that was captured during input consumption
-          if (this.currentBatchComposition && this.currentBatchComposition.yields) {
-            // Produce outputs based on batch composition with SPECIFIC quality per resource
-            for (const [resourceType, yieldAmount] of Object.entries(this.currentBatchComposition.yields)) {
-              const resType = resourceType as ResourceType;
-
-              // Calculate specific quality for this output resource based on its OWN tech level
-              const resTechLevel = getTechLevel(resType);
-              const resQuality = Math.min(
-                this.productionQuality,
-                resTechLevel,
-                inputQualityCap
-              );
-
-              console.log(`[Q-DEBUG] Smelting ${resType}: Q${resQuality.toFixed(2)} (Tech: ${resTechLevel}, InputCap: ${inputQualityCap.toFixed(2)})`);
-
-              inventory.add(resType, yieldAmount as number, resQuality);
-            }
-          } else {
-            // Fallback
-            inventory.add(recipe.outputResource, recipe.outputAmount, baseOutputQuality);
+        } else if (hasBatchInput(recipe)) {
+          if (!this.currentBatchComposition) {
+            throw new Error(`Batch recipe ${recipe.name} completed without a batch composition`);
           }
-        }
-        // Normal production
-        else {
+          processBatchOutput(
+            inventory,
+            this.currentBatchComposition,
+            this.productionQuality,
+            inputQualityCap
+          );
+        } else {
           inventory.add(recipe.outputResource, recipe.outputAmount, baseOutputQuality);
         }
 
         progress = 0;
-
-        // If we have overflow work, loop back to:
-        // 1. Consume inputs for the next cycle (since progress = 0 again)
-        // 2. Apply the overflow work to start the next cycle
-        // This is NOT a bug - we're legitimately starting the next cycle!
-        if (remainingWork > 0) {
-          continue;
-        }
+        // Loop continues naturally if remainingWork > 0
       }
-
-      // If we got here, we're done for this tick.
-      break;
     }
 
     this.recipeProgress.set(recipe.name, progress);
   }
 
+  private consumeInputsAndStartCycle(recipe: Recipe, inventory: Inventory): void {
+    let totalQuality = 0;
+    this.currentBatchComposition = null; // Reset batch composition
+
+    recipe.inputs.forEach(i => {
+      const result = consumeInput(inventory, i.resource, i.amount);
+      totalQuality += result.quality;
+      if (result.composition) {
+        this.currentBatchComposition = result.composition;
+      }
+    });
+    this.currentCycleInputQuality = totalQuality / recipe.inputs.length;
+  }
+
   private attemptAutobuy(recipe: Recipe, inventory: Inventory): boolean {
+    let autoBuySucceeded = true;
+
     for (const input of recipe.inputs) {
       if (!inventory.has(input.resource, input.amount)) {
         const needed = input.amount - inventory.getAmount(input.resource);
         if (!tryAutoBuy(inventory, input.resource, needed, getBalance())) {
-          return false;
+          autoBuySucceeded = false;
+          break;
         }
       }
     }
 
-    return recipe.inputs.every(i => inventory.has(i.resource, i.amount));
+    return autoBuySucceeded && recipe.inputs.every(i => inventory.has(i.resource, i.amount));
   }
 
   setProduction(recipeName: RecipeName | null): boolean {
