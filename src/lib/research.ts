@@ -1,11 +1,12 @@
 import { ResourceType, RecipeName } from '../utils/types';
 import { getResearch, addToResearch } from './game/gameState';
 import { ALL_RECIPES } from './recipes/recipes';
+import { getGameState } from './game/gameState';
 
 /**
  * Track researched recipes globally
  */
-export const researchedRecipes: Set<RecipeName> = new Set();
+export const researchedRecipes: Set<RecipeName> = getGameState().researchedRecipes;
 
 /**
  * Research a specific recipe

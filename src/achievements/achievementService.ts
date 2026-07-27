@@ -5,40 +5,17 @@ import { getBalance, getResearch, getResearchers, getGlobalProductionMultiplier 
 import { Inventory } from '../lib/inventory';
 import { ResourceType } from '../utils/types';
 import { resources } from '../lib/resources/resourcesRegistry';
-
-const STORAGE_KEY = 'baseclicker_achievements';
+import { getGameState } from '../lib/game/gameState';
 
 class AchievementService {
-      private unlockedIds: Set<string> = new Set();
       private inventory: Inventory | null = null;
 
-      constructor() {
-            this.load();
-      }
-
-      private load() {
-            try {
-                  if (typeof localStorage !== 'undefined') {
-                        const saved = localStorage.getItem(STORAGE_KEY);
-                        if (saved) {
-                              const ids = JSON.parse(saved);
-                              this.unlockedIds = new Set(ids);
-                        }
-                  }
-                  this.refreshResourceModifiers();
-            } catch (e) {
-                  console.error('Failed to load achievements', e);
-            }
+      private get unlockedIds(): Set<string> {
+            return getGameState().achievementIds;
       }
 
       public setInventory(inventory: Inventory) {
             this.inventory = inventory;
-      }
-
-      private save() {
-            if (typeof localStorage !== 'undefined') {
-                  localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(this.unlockedIds)));
-            }
       }
 
       public getStatus(achievementId: string): AchievementStatus {
@@ -107,7 +84,6 @@ class AchievementService {
             }
 
             if (newlyUnlocked.length > 0) {
-                  this.save();
                   this.refreshResourceModifiers();
             }
             return newlyUnlocked;
@@ -154,7 +130,7 @@ class AchievementService {
 
       public reset() {
             this.unlockedIds.clear();
-            this.save();
+            this.refreshResourceModifiers();
       }
 }
 

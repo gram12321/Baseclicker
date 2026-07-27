@@ -1,5 +1,13 @@
 import { ResourceType, ResourceBatch, BatchComposition } from '../utils/types';
-import { mixQuality } from './market/market';
+import { mixQuality } from './resources/quality';
+
+export interface InventorySave {
+  amounts: Record<ResourceType, number>;
+  qualities: Record<ResourceType, number>;
+  lifetimeTotals: Record<ResourceType, number>;
+  batches: Record<ResourceType, ResourceBatch[]>;
+  nextBatchId: number;
+}
 
 export class Inventory {
   private amounts: Record<ResourceType, number>;
@@ -7,20 +15,20 @@ export class Inventory {
   private lifetimeTotals: Record<ResourceType, number>;
 
   // Batch tracking: FIFO queue of batches per resource type
-  private batches: Map<ResourceType, ResourceBatch[]>;
+  private batches: Record<ResourceType, ResourceBatch[]>;
   private nextBatchId: number = 0;
 
   constructor(initial?: Partial<Record<ResourceType, number>>) {
     this.amounts = {} as Record<ResourceType, number>;
     this.qualities = {} as Record<ResourceType, number>;
     this.lifetimeTotals = {} as Record<ResourceType, number>;
-    this.batches = new Map();
+    this.batches = {} as Record<ResourceType, ResourceBatch[]>;
 
     for (const r of Object.values(ResourceType)) {
       this.amounts[r] = 0;
       this.qualities[r] = 1.0; // Default quality
       this.lifetimeTotals[r] = 0;
-      this.batches.set(r, []);
+      this.batches[r] = [];
     }
 
     for (const r of Object.values(ResourceType)) {
@@ -84,7 +92,7 @@ export class Inventory {
     for (const r of Object.values(ResourceType)) {
       this.amounts[r] = 0;
       this.qualities[r] = 1.0;
-      this.batches.set(r, []);
+      this.batches[r] = [];
     }
   }
 
@@ -123,9 +131,9 @@ export class Inventory {
       composition
     };
 
-    const batchQueue = this.batches.get(resource) || [];
+    const batchQueue = this.batches[resource] || [];
     batchQueue.push(batch);
-    this.batches.set(resource, batchQueue);
+    this.batches[resource] = batchQueue;
   }
 
   /**
@@ -135,7 +143,7 @@ export class Inventory {
   removeBatch(resource: ResourceType, amount: number): ResourceBatch | null {
     if (!this.has(resource, amount)) return null;
 
-    const batchQueue = this.batches.get(resource) || [];
+    const batchQueue = this.batches[resource] || [];
 
     if (batchQueue.length === 0) return null;
 
@@ -168,7 +176,7 @@ export class Inventory {
    * Peek at the next batch without removing it.
    */
   peekBatch(resource: ResourceType): ResourceBatch | null {
-    const batchQueue = this.batches.get(resource) || [];
+    const batchQueue = this.batches[resource] || [];
     return batchQueue.length > 0 ? { ...batchQueue[0] } : null;
   }
 
@@ -176,7 +184,55 @@ export class Inventory {
    * Get all batches for a resource (for debugging/display).
    */
   getBatches(resource: ResourceType): ResourceBatch[] {
-    return [...(this.batches.get(resource) || [])];
+    return [...(this.batches[resource] || [])];
+  }
+
+  toSave(): InventorySave {
+    return {
+      amounts: { ...this.amounts },
+      qualities: { ...this.qualities },
+      lifetimeTotals: { ...this.lifetimeTotals },
+      batches: Object.fromEntries(
+        Object.values(ResourceType).map(resource => [
+          resource,
+          (this.batches[resource] || []).map(batch => ({
+            ...batch,
+            composition: batch.composition
+              ? { ...batch.composition, yields: { ...batch.composition.yields } }
+              : undefined,
+          })),
+        ])
+      ) as Record<ResourceType, ResourceBatch[]>,
+      nextBatchId: this.nextBatchId,
+    };
+  }
+
+  static fromSave(data: InventorySave): Inventory {
+    const inventory = new Inventory();
+
+    for (const resource of Object.values(ResourceType)) {
+      inventory.amounts[resource] = data.amounts[resource] ?? 0;
+      inventory.qualities[resource] = data.qualities[resource] ?? 1.0;
+      inventory.lifetimeTotals[resource] = data.lifetimeTotals[resource] ?? 0;
+      inventory.batches[resource] = (data.batches[resource] ?? []).map(batch => ({
+        ...batch,
+        composition: batch.composition
+          ? { ...batch.composition, yields: { ...batch.composition.yields } }
+          : undefined,
+      }));
+    }
+
+    inventory.nextBatchId = data.nextBatchId ?? 0;
+    return inventory;
+  }
+
+  restoreFromSave(data: InventorySave): void {
+    const restored = Inventory.fromSave(data);
+    this.amounts = restored.amounts;
+    this.qualities = restored.qualities;
+    this.lifetimeTotals = restored.lifetimeTotals;
+    this.batches = restored.batches;
+    this.nextBatchId = restored.nextBatchId;
   }
 
 }

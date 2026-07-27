@@ -1,16 +1,6 @@
 import { ResourceType } from '../../utils/types';
 import { resources } from '../resources/resourcesRegistry';
-import { getBalance, addToBalance } from './gameState';
-
-// Persistent Technology State
-// This should NOT be reset by standard game resets (resetEconomy/resetGameState)
-const techLevels: Record<ResourceType, number> = Object.values(ResourceType).reduce(
-      (acc, type) => {
-            acc[type] = 1; // Starts at Level 1
-            return acc;
-      },
-      {} as Record<ResourceType, number>
-);
+import { getBalance, addToBalance, getGameState } from './gameState';
 
 const UPGRADE_COST_GROWTH = 1.5;
 
@@ -18,7 +8,7 @@ const UPGRADE_COST_GROWTH = 1.5;
  * Gets the current Technology Level for a specific resource.
  */
 export function getTechLevel(type: ResourceType): number {
-      return techLevels[type] ?? 1;
+      return getGameState().techLevels[type] ?? 1;
 }
 
 /**
@@ -40,7 +30,7 @@ export function upgradeTech(type: ResourceType): boolean {
       const cost = getTechUpgradeCost(type);
       if (getBalance() >= cost) {
             addToBalance(-cost);
-            techLevels[type] = (techLevels[type] ?? 0) + 1;
+            getGameState().techLevels[type] = (getGameState().techLevels[type] ?? 0) + 1;
             return true;
       }
       return false;
@@ -50,5 +40,5 @@ export function upgradeTech(type: ResourceType): boolean {
  * Debug/Admin function to set technology level directly.
  */
 export function setTechLevel(type: ResourceType, level: number): void {
-      techLevels[type] = Math.max(0, Math.floor(level));
+      getGameState().techLevels[type] = Math.max(0, Math.floor(level));
 }

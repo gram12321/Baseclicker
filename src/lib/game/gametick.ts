@@ -3,18 +3,17 @@ import { runTickHooks } from '../../hooks/gametickHook';
 import { advanceProduction } from '../Building';
 import { Inventory } from '../inventory';
 import { autoSellResource } from '../market/market';
-import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch, getAutoSellMinKeep } from './gameState';
+import { getAutoSellAmount, isAutoSellEnabled, getResearchers, addToResearch, getAutoSellMinKeep, getGameState, getInventory } from './gameState';
 import { ResourceType } from '../../utils/types';
 import { achievementService } from '../../achievements/achievementService';
 import { processMarketDiffusion } from '../market/marketDiffusion';
-
-let gameday = 0;
 
 /**
  * Advances the game by one tick (one day).
  */
 export function tick(inventory?: Inventory) {
-    gameday += 1;
+    getGameState().day += 1;
+    const activeInventory = inventory ?? getInventory();
 
     // Process research
     const researchers = getResearchers();
@@ -24,14 +23,14 @@ export function tick(inventory?: Inventory) {
 
     // Advance production first (no-op if inventory not provided)
     try {
-        advanceProduction(inventory ?? null);
+        advanceProduction(activeInventory);
     } catch (e) {
         // swallow errors from production to avoid breaking core tick
     }
-    if (inventory) {
+    if (activeInventory) {
         for (const resourceType of Object.values(ResourceType)) {
             if (isAutoSellEnabled(resourceType)) {
-                autoSellResource(inventory, resourceType, getAutoSellMinKeep(resourceType), getAutoSellAmount(resourceType));
+                autoSellResource(activeInventory, resourceType, getAutoSellMinKeep(resourceType), getAutoSellAmount(resourceType));
             }
         }
     }
@@ -52,10 +51,10 @@ export function tick(inventory?: Inventory) {
  * Get the current gameday.
  */
 export function getGameday() {
-    return gameday;
+    return getGameState().day;
 }
 
 export function resetGameday(): void {
-    gameday = 0;
+    getGameState().day = 0;
 }
 

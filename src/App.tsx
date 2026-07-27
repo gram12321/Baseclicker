@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Inventory } from './lib/inventory';
 
 // Pages
 import Production from './pages/Production';
@@ -15,7 +14,11 @@ import Technology from './pages/Technology';
 import { Header } from './components/layout/Header';
 import { getGameday, tick } from './lib/game/gametick';
 import { achievementService } from './achievements/achievementService';
-import { getBalance } from './lib/game/gameState';
+import { getBalance, getInventory } from './lib/game/gameState';
+import { loadGame, saveGame } from './lib/game/saveGame';
+
+// Load the plain-data snapshot before any page reads the shared game session.
+loadGame();
 
 function Navigation() {
   const location = useLocation();
@@ -59,14 +62,20 @@ function Navigation() {
 }
 
 function AppContent() {
-  const inventoryRef = useRef(new Inventory());
+  // The session owns the inventory; the ref only preserves the existing page API.
+  const inventoryRef = useRef(getInventory());
   const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     achievementService.setInventory(inventoryRef.current);
+    achievementService.refreshResourceModifiers();
+
+    window.addEventListener('beforeunload', saveGame);
+    return () => window.removeEventListener('beforeunload', saveGame);
   }, []);
 
   const refresh = () => {
+    saveGame();
     setRefreshToken((value) => value + 1);
   };
 
@@ -74,7 +83,7 @@ function AppContent() {
   const balance = getBalance();
 
   const handleAdvanceDay = () => {
-    tick(inventoryRef.current);
+    tick();
     refresh();
   };
 

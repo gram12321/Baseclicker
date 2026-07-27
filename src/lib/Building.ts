@@ -9,6 +9,7 @@ import {
 } from './recipes/recipes';
 import { consumeInput, hasBatchInput, processBatchOutput, produceOreBatch } from './resources/batchHelpers';
 import { getTechLevel } from './game/technology';
+import { getGameState } from './game/gameState';
 
 const UPGRADE_COST_GROWTH = 1.5;
 const UPGRADE_BASE_MULTIPLIER_INCREASE = 0.2;
@@ -53,11 +54,39 @@ export const BUILDING_RECIPES: Record<BuildingType, Recipe[]> = {
   [BuildingType.Smelter]: [SmeltOreBatch],
 };
 
-export const builtBuildings: Map<BuildingType, Building> = new Map();
+export interface BuildingSave {
+  buildingType: BuildingType;
+  productionMultiplier: number;
+  productionUpgradeLevel: number;
+  productionQuality: number;
+  qualityUpgradeLevel: number;
+  activeRecipeName: RecipeName | null;
+  isActive: boolean;
+  recipeProgress: Partial<Record<RecipeName, number>>;
+  currentCycleInputQuality: number;
+  currentBatchComposition: BatchComposition | null;
+}
+
+export const builtBuildings: Map<BuildingType, Building> = getGameState().buildings;
 
 export function resetBuildings(): void {
   builtBuildings.clear();
   resetResearch();
+}
+
+export function restoreBuildings(savedBuildings: BuildingSave[]): void {
+  builtBuildings.clear();
+
+  for (const saved of savedBuildings) {
+    if (!BUILDING_RECIPES[saved.buildingType]) continue;
+    const building = new Building(
+      saved.buildingType,
+      BUILDING_RECIPES[saved.buildingType],
+      BUILDING_COSTS[saved.buildingType]
+    );
+    building.restoreFromSave(saved);
+    builtBuildings.set(saved.buildingType, building);
+  }
 }
 
 export function advanceProduction(inventory: Inventory | null, baseProduction = 1): void {
@@ -403,5 +432,36 @@ export class Building {
       return true;
     }
     return false;
+  }
+
+  toSave(): BuildingSave {
+    return {
+      buildingType: this.buildingType,
+      productionMultiplier: this.productionMultiplier,
+      productionUpgradeLevel: this.productionUpgradeLevel,
+      productionQuality: this.productionQuality,
+      qualityUpgradeLevel: this.qualityUpgradeLevel,
+      activeRecipeName: this.activeRecipeName,
+      isActive: this.isActiveFlag,
+      recipeProgress: Object.fromEntries(this.recipeProgress) as Partial<Record<RecipeName, number>>,
+      currentCycleInputQuality: this.currentCycleInputQuality,
+      currentBatchComposition: this.currentBatchComposition
+        ? { ...this.currentBatchComposition, yields: { ...this.currentBatchComposition.yields } }
+        : null,
+    };
+  }
+
+  restoreFromSave(saved: BuildingSave): void {
+    this.productionMultiplier = saved.productionMultiplier;
+    this.productionUpgradeLevel = saved.productionUpgradeLevel;
+    this.productionQuality = saved.productionQuality;
+    this.qualityUpgradeLevel = saved.qualityUpgradeLevel;
+    this.activeRecipeName = saved.activeRecipeName;
+    this.isActiveFlag = saved.isActive;
+    this.recipeProgress = new Map(Object.entries(saved.recipeProgress) as [RecipeName, number][]);
+    this.currentCycleInputQuality = saved.currentCycleInputQuality;
+    this.currentBatchComposition = saved.currentBatchComposition
+      ? { ...saved.currentBatchComposition, yields: { ...saved.currentBatchComposition.yields } }
+      : null;
   }
 }
